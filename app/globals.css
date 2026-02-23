@@ -1,7 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #0b1020;
+  --color-panel: #111827;
+  --color-border: #1e293b;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-muted: #94a3b8;
+}
 
 body {
-  @apply bg-surface text-gray-200 antialiased;
+  background-color: var(--color-surface);
+  color: #e5e7eb;
+  -webkit-font-smoothing: antialiased;
 }

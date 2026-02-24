@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Shell from '@/src/components/Shell';
+import ConvexClientProvider from '@/src/components/ConvexClientProvider';
 
 export const metadata: Metadata = {
   title: 'AgentDashboard',
@@ -11,7 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <Shell>{children}</Shell>
+        <ConvexClientProvider>
+          <Shell>{children}</Shell>
+        </ConvexClientProvider>
       </body>
     </html>
   );

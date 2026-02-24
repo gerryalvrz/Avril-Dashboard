@@ -52,62 +52,72 @@ async function callOpenClawBridge(input: { chatId: string; message: string; mode
 }
 
 export async function POST(req: Request) {
-  if (!requireDashboardToken(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    if (!requireDashboardToken(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const ip = getClientIp(req);
+    if (hitRateLimit(`respond:${ip}`, 30)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
+    if (rejectLargePayload(req, 8 * 1024)) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+    }
+
+    const convexUrl = getConvexUrl();
+    if (!convexUrl) {
+      return NextResponse.json({ error: 'Missing Convex URL configuration.' }, { status: 500 });
+    }
+
+    const body = (await req.json()) as RequestBody;
+    const chatId = body.chatId?.trim();
+    const message = body.message?.trim();
+
+    if (!chatId || !message) {
+      return NextResponse.json({ error: 'chatId and message are required.' }, { status: 400 });
+    }
+
+    if (message.length > 1200) {
+      return NextResponse.json({ error: 'Message too long (max 1200 chars).' }, { status: 400 });
+    }
+
+    const client = new ConvexHttpClient(convexUrl);
+
+    const existingChats = await (client as any).query('chats:listChats', {});
+    if (!Array.isArray(existingChats) || !existingChats.some((c: any) => c?._id === chatId)) {
+      return NextResponse.json({ error: 'Invalid chatId.' }, { status: 400 });
+    }
+
+    await (client as any).mutation('chats:sendMessage', {
+      chatId,
+      authorType: 'human',
+      authorId: 'gerry',
+      content: message,
+    });
+
+    let assistantText = await callOpenClawBridge({
+      chatId,
+      message,
+      model: body.model,
+    });
+
+    if (!assistantText) {
+      assistantText =
+        'Bridge no disponible. Configura OPENCLAW_BRIDGE_URL y OPENCLAW_BRIDGE_TOKEN en Vercel para usar tus sesiones OAuth de OpenClaw.';
+    }
+
+    await (client as any).mutation('chats:sendMessage', {
+      chatId,
+      authorType: 'agent',
+      authorId: 'AgentMotus',
+      content: assistantText,
+    });
+
+    return NextResponse.json({ ok: true, reply: assistantText });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const ip = getClientIp(req);
-  if (hitRateLimit(`respond:${ip}`, 30)) {
-    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
-  }
-
-  if (rejectLargePayload(req, 8 * 1024)) {
-    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
-  }
-
-  const convexUrl = getConvexUrl();
-  if (!convexUrl) {
-    return NextResponse.json({ error: 'Missing Convex URL configuration.' }, { status: 500 });
-  }
-
-  const body = (await req.json()) as RequestBody;
-  const chatId = body.chatId?.trim();
-  const message = body.message?.trim();
-
-  if (!chatId || !message) {
-    return NextResponse.json({ error: 'chatId and message are required.' }, { status: 400 });
-  }
-
-  if (message.length > 1200) {
-    return NextResponse.json({ error: 'Message too long (max 1200 chars).' }, { status: 400 });
-  }
-
-  const client = new ConvexHttpClient(convexUrl);
-
-  await (client as any).mutation('chats:sendMessage', {
-    chatId,
-    authorType: 'human',
-    authorId: 'gerry',
-    content: message,
-  });
-
-  let assistantText = await callOpenClawBridge({
-    chatId,
-    message,
-    model: body.model,
-  });
-
-  if (!assistantText) {
-    assistantText =
-      'Bridge no disponible. Configura OPENCLAW_BRIDGE_URL y OPENCLAW_BRIDGE_TOKEN en Vercel para usar tus sesiones OAuth de OpenClaw.';
-  }
-
-  await (client as any).mutation('chats:sendMessage', {
-    chatId,
-    authorType: 'agent',
-    authorId: 'AgentMotus',
-    content: assistantText,
-  });
-
-  return NextResponse.json({ ok: true, reply: assistantText });
 }

@@ -36,8 +36,8 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
       try {
         initWaaP({
           config: {
-            authenticationMethods: ['email', 'phone', 'social'],
-            allowedSocials: ['google', 'discord', 'twitter', 'github', 'bluesky'],
+            authenticationMethods: ['wallet', 'social'],
+            allowedSocials: ['google'],
             styles: { darkMode: false },
           },
           project: {

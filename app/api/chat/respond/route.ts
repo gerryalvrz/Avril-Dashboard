@@ -5,6 +5,7 @@ import { getClientIp, hitRateLimit, rejectLargePayload, requireDashboardToken } 
 type RequestBody = {
   chatId: string;
   message: string;
+  organizationId?: string;
   model?: 'codex' | 'opus';
 };
 
@@ -196,7 +197,9 @@ export async function POST(req: Request) {
 
     let existingChats: any[];
     try {
-      existingChats = await (client as any).query('chats:listChats', {});
+      existingChats = await (client as any).query('chats:listChats', {
+        organizationId: body.organizationId,
+      });
     } catch (err) {
       return errorResponse(502, 'CONVEX_ERROR', 'Failed to validate chat against Convex.', {
         retryable: true,

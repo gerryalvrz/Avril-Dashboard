@@ -21,10 +21,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing Convex URL configuration.' }, { status: 500 });
   }
 
-  const body = (await req.json()) as { title?: string };
+  const body = (await req.json()) as { title?: string; organizationId?: string };
   const title = (body.title || 'New Chat').slice(0, 80);
   const client = new ConvexHttpClient(convexUrl);
-  const chatId = await (client as any).mutation('chats:createChat', { title });
+  const chatId = await (client as any).mutation('chats:createChat', {
+    title,
+    organizationId: body.organizationId,
+  });
 
   return NextResponse.json({ chatId });
 }

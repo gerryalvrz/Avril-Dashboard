@@ -30,9 +30,10 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const chatId = searchParams.get('chatId')?.trim();
+    const organizationId = searchParams.get('organizationId')?.trim();
     const client = new ConvexHttpClient(convexUrl);
 
-    const chats = await (client as any).query('chats:listChats', {});
+    const chats = await (client as any).query('chats:listChats', { organizationId: organizationId || undefined });
 
     if (!chatId) {
       return NextResponse.json({ ok: true, chats, messages: [] });

@@ -1,5 +1,6 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
+import { authzError, requireEntity, requireOrgMembership, resolveOrgForUser } from './lib/authz';
 
 export const createChat = mutation({
   args: {
@@ -7,10 +8,12 @@ export const createChat = mutation({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
+    const { organizationId } = await resolveOrgForUser(ctx, args.organizationId, 'operator');
+
     const now = new Date().toISOString();
     const chatId = await ctx.db.insert('chats', {
       title: args.title?.trim() || 'New Chat',
-      organizationId: args.organizationId,
+      organizationId,
       createdAt: now,
       updatedAt: now,
     });
@@ -19,16 +22,21 @@ export const createChat = mutation({
 });
 
 export const listChats = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, args) => {
+    const { organizationId } = await resolveOrgForUser(ctx, args.organizationId, 'viewer');
+
     const chats = await ctx.db
       .query('chats')
-      .withIndex('by_updatedAt')
-      .order('desc')
-      .take(50);
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .collect();
+
+    const sorted = chats.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 50);
 
     const withLastMessage = await Promise.all(
-      chats.map(async (chat) => {
+      sorted.map(async (chat) => {
         const last = await ctx.db
           .query('messages')
           .withIndex('by_chat', (q) => q.eq('chatId', chat._id))
@@ -50,16 +58,52 @@ export const listChats = query({
 export const sendMessage = mutation({
   args: {
     chatId: v.id('chats'),
-    authorType: v.union(v.literal('human'), v.literal('agent')),
-    authorId: v.string(),
     content: v.string(),
+    authorType: v.optional(v.union(v.literal('human'), v.literal('agent'))),
+    authorId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const chat = requireEntity(await ctx.db.get(args.chatId), 'Chat');
+    if (!chat.organizationId) {
+      authzError('not_found', 'Chat not found.');
+    }
+
+    const { user } = await requireOrgMembership(ctx, chat.organizationId, 'viewer');
+
     const now = new Date().toISOString();
     const messageId = await ctx.db.insert('messages', {
       chatId: args.chatId,
-      authorType: args.authorType,
-      authorId: args.authorId,
+      authorType: 'human',
+      authorId: user.email,
+      content: args.content,
+      createdAt: now,
+    });
+
+    await ctx.db.patch(args.chatId, { updatedAt: now });
+
+    return messageId;
+  },
+});
+
+export const sendAgentMessage = mutation({
+  args: {
+    chatId: v.id('chats'),
+    content: v.string(),
+    authorId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const chat = requireEntity(await ctx.db.get(args.chatId), 'Chat');
+    if (!chat.organizationId) {
+      authzError('not_found', 'Chat not found.');
+    }
+
+    await requireOrgMembership(ctx, chat.organizationId, 'operator');
+
+    const now = new Date().toISOString();
+    const messageId = await ctx.db.insert('messages', {
+      chatId: args.chatId,
+      authorType: 'agent',
+      authorId: args.authorId?.trim() || 'AgentMotus',
       content: args.content,
       createdAt: now,
     });
@@ -75,6 +119,13 @@ export const listMessages = query({
     chatId: v.id('chats'),
   },
   handler: async (ctx, args) => {
+    const chat = requireEntity(await ctx.db.get(args.chatId), 'Chat');
+    if (!chat.organizationId) {
+      authzError('not_found', 'Chat not found.');
+    }
+
+    await requireOrgMembership(ctx, chat.organizationId, 'viewer');
+
     const messages = await ctx.db
       .query('messages')
       .withIndex('by_chat', (q) => q.eq('chatId', args.chatId))

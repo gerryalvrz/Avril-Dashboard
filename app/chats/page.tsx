@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN || '';
+
 type Chat = {
   _id: string;
   title: string;
@@ -45,7 +47,10 @@ export default function ChatsPage() {
 
   const loadState = async (chatId?: string | null) => {
     const query = chatId ? `?chatId=${encodeURIComponent(chatId)}` : '';
-    const res = await fetch(`/api/chat/state${query}`, { cache: 'no-store' });
+    const res = await fetch(`/api/chat/state${query}`, {
+      cache: 'no-store',
+      headers: { 'x-dashboard-token': DASHBOARD_TOKEN },
+    });
     if (!res.ok) return;
     const data = await res.json();
     setChats(data.chats || []);
@@ -87,7 +92,7 @@ export default function ChatsPage() {
   async function handleCreateChat() {
     const res = await fetch('/api/chat/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-token': DASHBOARD_TOKEN },
       body: JSON.stringify({ title: `Chat ${chats.length + 1}` }),
     });
     if (!res.ok) return;
@@ -114,7 +119,7 @@ export default function ChatsPage() {
     if (!chatId) {
       const createRes = await fetch('/api/chat/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-dashboard-token': DASHBOARD_TOKEN },
         body: JSON.stringify({ title: 'New Chat' }),
       });
       if (!createRes.ok) return;
@@ -130,7 +135,7 @@ export default function ChatsPage() {
     try {
       const res = await fetch('/api/chat/respond', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-dashboard-token': DASHBOARD_TOKEN },
         body: JSON.stringify({ chatId, message, model }),
       });
 

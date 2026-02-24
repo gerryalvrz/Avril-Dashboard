@@ -36,9 +36,9 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
       try {
         initWaaP({
           config: {
-            authenticationMethods: [],
-            allowedSocials: ['google', 'github'],
-            styles: { darkMode: true },
+            authenticationMethods: ['email', 'phone', 'social'],
+            allowedSocials: ['google', 'discord', 'twitter', 'github', 'bluesky'],
+            styles: { darkMode: false },
           },
           project: {
             name: 'AgentMotus',

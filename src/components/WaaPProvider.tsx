@@ -1,6 +1,5 @@
 'use client';
 
-import { initWaaP } from '@human.tech/waap-sdk';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 type WaaPContextType = {
@@ -34,6 +33,8 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
 
     async function boot() {
       try {
+        const { initWaaP } = await import('@human.tech/waap-sdk');
+
         initWaaP({
           config: {
             authenticationMethods: ['wallet', 'social'],

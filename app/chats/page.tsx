@@ -35,6 +35,16 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 65000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export default function ChatsPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -43,6 +53,7 @@ export default function ChatsPage() {
   const [sending, setSending] = useState(false);
   const [model, setModel] = useState<ModelChoice>('codex');
   const [streamingText, setStreamingText] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -130,29 +141,47 @@ export default function ChatsPage() {
     }
 
     setSending(true);
+    setStatusMessage('⏳ Enviando al agente...');
     const message = draft.trim();
     setDraft('');
 
     try {
-      const res = await fetch('/api/chat/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId, message, model }),
-      });
+      const res = await fetchWithTimeout(
+        '/api/chat/respond',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, message, model }),
+        },
+        70000
+      );
 
       let reply = '';
       if (res.ok) {
         const data = await res.json();
         reply = data?.reply || '';
+      } else {
+        const errorText = await res.text();
+        setStatusMessage(`❌ Error del servidor (${res.status}). ${errorText || 'Intenta de nuevo.'}`);
       }
 
+      setStatusMessage('🔄 Actualizando estado del chat...');
       await loadState(chatId);
 
       if (reply) {
+        setStatusMessage('✍️ Renderizando respuesta...');
         await animateAssistantReply(reply);
       }
 
       await loadState(chatId);
+      setStatusMessage('');
+    } catch (err) {
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      setStatusMessage(
+        isAbort
+          ? '⏱️ Timeout esperando respuesta del backend/bridge. Revisa bridge y vuelve a intentar.'
+          : '❌ Falló la solicitud. Revisa conexión o configuración del bridge.'
+      );
     } finally {
       setSending(false);
     }
@@ -192,7 +221,10 @@ export default function ChatsPage() {
 
       <div className="flex-1 bg-panel border border-border rounded-xl flex flex-col">
         <div className="p-4 border-b border-border flex items-center justify-between gap-4">
-          <h3 className="font-semibold text-sm">{selectedChat?.title || 'Select a chat'}</h3>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm">{selectedChat?.title || 'Select a chat'}</h3>
+            {statusMessage && <p className="text-[11px] text-yellow-300 mt-1 truncate">{statusMessage}</p>}
+          </div>
           <div className="flex items-center gap-2 text-xs">
             <span className="text-muted">Model:</span>
             <select

@@ -20,7 +20,7 @@ async function callOpenClawBridge(input: { chatId: string; message: string; mode
 
   const tryOnce = async () => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), 12000);
 
     try {
       const res = await fetch(bridgeUrl, {

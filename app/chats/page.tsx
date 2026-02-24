@@ -1,6 +1,9 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 
 type Chat = {
   _id: string;
@@ -214,7 +217,15 @@ export default function ChatsPage() {
                 <p className="text-xs font-medium text-muted mb-1">
                   {m.authorId} · {timeLabel(m.createdAt)}
                 </p>
-                {m.content}
+                {m.authorType === 'agent' ? (
+                  <div className="chat-markdown">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <span className="whitespace-pre-wrap">{m.content}</span>
+                )}
               </div>
             </div>
           ))}
@@ -223,7 +234,7 @@ export default function ChatsPage() {
             <div className="flex flex-col items-start">
               <div className="max-w-[70%] px-4 py-2.5 rounded-xl text-sm bg-accent/10 text-gray-200">
                 <p className="text-xs font-medium text-muted mb-1">AgentMotus · now</p>
-                {streamingText}
+                <div className="chat-markdown whitespace-pre-wrap">{streamingText}</div>
               </div>
             </div>
           )}

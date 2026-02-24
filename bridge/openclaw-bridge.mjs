@@ -35,13 +35,15 @@ function pickReply(stdout) {
   if (!raw) return '';
   try {
     const parsed = JSON.parse(raw);
+    const payloadText = parsed?.result?.payloads?.[0]?.text;
     return (
+      payloadText ||
       parsed?.reply ||
       parsed?.message ||
       parsed?.text ||
       parsed?.result?.reply ||
       parsed?.result?.message ||
-      raw
+      ''
     );
   } catch {
     return raw;

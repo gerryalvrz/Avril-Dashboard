@@ -23,6 +23,10 @@ type Msg = {
 
 type ModelChoice = 'codex' | 'opus';
 
+type ApiErrorPayload = {
+  error?: string | { code?: string; message?: string; retryable?: boolean; details?: unknown };
+};
+
 function timeLabel(iso: string) {
   try {
     return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -45,6 +49,12 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
   }
 }
 
+function extractServerError(payload: ApiErrorPayload | null, fallback = 'Unknown server error') {
+  if (!payload?.error) return fallback;
+  if (typeof payload.error === 'string') return payload.error;
+  return payload.error.message || payload.error.code || fallback;
+}
+
 export default function ChatsPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -59,14 +69,27 @@ export default function ChatsPage() {
 
   const loadState = async (chatId?: string | null) => {
     const query = chatId ? `?chatId=${encodeURIComponent(chatId)}` : '';
-    const res = await fetch(`/api/chat/state${query}`, {
-      cache: 'no-store',
-      
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    setChats(data.chats || []);
-    setMessages(data.messages || []);
+    try {
+      const res = await fetch(`/api/chat/state${query}`, {
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        let text = '';
+        try {
+          const payload = (await res.json()) as ApiErrorPayload;
+          text = extractServerError(payload);
+        } catch {
+          text = await res.text();
+        }
+        setStatusMessage(`⚠️ No se pudo actualizar el estado (${res.status}): ${text || 'intenta de nuevo'}`);
+        return;
+      }
+      const data = await res.json();
+      setChats(data.chats || []);
+      setMessages(data.messages || []);
+    } catch {
+      setStatusMessage('⚠️ Falló la actualización del chat. Revisa tu conexión.');
+    }
   };
 
   useEffect(() => {
@@ -89,6 +112,12 @@ export default function ChatsPage() {
   useEffect(() => {
     if (!selectedChatId && chats.length > 0) {
       setSelectedChatId(chats[0]._id);
+      return;
+    }
+
+    if (selectedChatId && chats.length > 0 && !chats.some((c) => c._id === selectedChatId)) {
+      setSelectedChatId(chats[0]._id);
+      setStatusMessage('ℹ️ El chat seleccionado ya no existe. Se abrió el chat más reciente.');
     }
   }, [chats, selectedChatId]);
 
@@ -107,7 +136,10 @@ export default function ChatsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: `Chat ${chats.length + 1}` }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      setStatusMessage('❌ No se pudo crear el chat.');
+      return;
+    }
     const data = await res.json();
     setSelectedChatId(data.chatId);
     await loadState(data.chatId);
@@ -134,7 +166,10 @@ export default function ChatsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'New Chat' }),
       });
-      if (!createRes.ok) return;
+      if (!createRes.ok) {
+        setStatusMessage('❌ No se pudo crear un chat para enviar el mensaje.');
+        return;
+      }
       const created = await createRes.json();
       chatId = created.chatId;
       setSelectedChatId(chatId);
@@ -153,17 +188,33 @@ export default function ChatsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chatId, message, model }),
         },
-        70000
+        30000
       );
 
-      let reply = '';
-      if (res.ok) {
-        const data = await res.json();
-        reply = data?.reply || '';
-      } else {
-        const errorText = await res.text();
-        setStatusMessage(`❌ Error del servidor (${res.status}). ${errorText || 'Intenta de nuevo.'}`);
+      if (!res.ok) {
+        let payload: ApiErrorPayload | null = null;
+        try {
+          payload = (await res.json()) as ApiErrorPayload;
+        } catch {
+          payload = null;
+        }
+
+        const serverError = extractServerError(payload, 'Intenta de nuevo.');
+        const code = typeof payload?.error === 'object' ? payload.error?.code : undefined;
+
+        if (code === 'CHAT_NOT_FOUND') {
+          setStatusMessage(`❌ ${serverError} Crea/selecciona otro chat y reintenta.`);
+          setSelectedChatId(null);
+          await loadState(null);
+        } else {
+          setStatusMessage(`❌ Error del servidor (${res.status}): ${serverError}`);
+          await loadState(chatId);
+        }
+        return;
       }
+
+      const data = await res.json();
+      const reply = data?.reply || '';
 
       setStatusMessage('🔄 Actualizando estado del chat...');
       await loadState(chatId);
@@ -179,7 +230,7 @@ export default function ChatsPage() {
       const isAbort = err instanceof Error && err.name === 'AbortError';
       setStatusMessage(
         isAbort
-          ? '⏱️ Timeout esperando respuesta del backend/bridge. Revisa bridge y vuelve a intentar.'
+          ? '⏱️ Timeout esperando al backend (30s). Revisa Convex/bridge y vuelve a intentar.'
           : '❌ Falló la solicitud. Revisa conexión o configuración del bridge.'
       );
     } finally {

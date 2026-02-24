@@ -82,5 +82,5 @@ export async function POST(req: Request) {
     content: assistantText,
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, reply: assistantText });
 }

@@ -1,10 +1,6 @@
-import { ConvexHttpClient } from 'convex/browser';
 import { NextResponse } from 'next/server';
 import { getClientIp, hitRateLimit, requireDashboardToken } from '@/src/lib/apiSecurity';
-
-function getConvexUrl() {
-  return process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
-}
+import { createChat } from '@/src/lib/convexServer';
 
 export async function POST(req: Request) {
   if (!requireDashboardToken(req)) {
@@ -16,18 +12,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
 
-  const convexUrl = getConvexUrl();
-  if (!convexUrl) {
-    return NextResponse.json({ error: 'Missing Convex URL configuration.' }, { status: 500 });
+  try {
+    const body = (await req.json()) as {
+      title?: string;
+      organizationId?: string;
+      area?: 'Research' | 'Ops' | 'General';
+      subArea?: 'Grants' | 'Competitors' | 'Deploy' | 'Alerts';
+    };
+    const title = (body.title || 'New Chat').slice(0, 80);
+    const chatId = await createChat({
+      title,
+      organizationId: body.organizationId,
+      area: body.area,
+      subArea: body.subArea,
+    });
+    return NextResponse.json({ chatId });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Convex error';
+    return NextResponse.json(
+      { error: message.includes('CONVEX_SERVER_SECRET') ? 'Missing Convex server secret.' : message },
+      { status: 500 }
+    );
   }
-
-  const body = (await req.json()) as { title?: string; organizationId?: string };
-  const title = (body.title || 'New Chat').slice(0, 80);
-  const client = new ConvexHttpClient(convexUrl);
-  const chatId = await (client as any).mutation('chats:createChat', {
-    title,
-    organizationId: body.organizationId,
-  });
-
-  return NextResponse.json({ chatId });
 }

@@ -1,6 +1,15 @@
-import { ConvexHttpClient } from 'convex/browser';
 import { NextResponse } from 'next/server';
 import { getClientIp, hitRateLimit, rejectLargePayload, requireDashboardToken } from '@/src/lib/apiSecurity';
+import { listChats, listMessages, sendMessage, sendAgentMessage } from '@/src/lib/convexServer';
+
+/** Max number of recent messages to send to the bridge as per-agent context. */
+const BRIDGE_CONTEXT_LAST_N = 20;
+/** When a chat has a stored summary, send only this many recent messages (summary covers the rest). */
+const BRIDGE_CONTEXT_LAST_N_WHEN_SUMMARY = 10;
+/** Max characters per message content when sending context (reduces token use). */
+const BRIDGE_CONTEXT_MAX_CONTENT_CHARS = 600;
+/** Suggested max total context size (chars) for the bridge; bridge may truncate further. */
+const BRIDGE_CONTEXT_MAX_CHARS = 12_000;
 
 type RequestBody = {
   chatId: string;
@@ -25,10 +34,6 @@ type BridgeResult =
   | { ok: true; text: string; attempts: number }
   | { ok: false; code: 'BRIDGE_TIMEOUT' | 'BRIDGE_ERROR'; message: string; attempts: number; retryable: boolean };
 
-function getConvexUrl() {
-  return process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
-}
-
 function errorResponse(
   status: number,
   code: ApiErrorCode,
@@ -49,7 +54,19 @@ function errorResponse(
   );
 }
 
-async function callOpenClawBridge(input: { chatId: string; message: string; model?: 'codex' | 'opus' }): Promise<BridgeResult> {
+type BridgeInput = {
+  chatId: string;
+  message: string;
+  model?: 'codex' | 'opus';
+  agentId?: string;
+  area?: string;
+  subArea?: string;
+  summary?: string;
+  messages?: Array<{ authorType: string; authorId: string; content: string; createdAt: string }>;
+  maxContextChars?: number;
+};
+
+async function callOpenClawBridge(input: BridgeInput): Promise<BridgeResult> {
   const bridgeUrl = process.env.OPENCLAW_BRIDGE_URL;
   const bridgeToken = process.env.OPENCLAW_BRIDGE_TOKEN;
 
@@ -82,6 +99,12 @@ async function callOpenClawBridge(input: { chatId: string; message: string; mode
           model: input.model ?? 'codex',
           source: 'agentdashboard',
           chatId: input.chatId,
+          ...(input.agentId !== undefined && { agentId: input.agentId }),
+          ...(input.area !== undefined && { area: input.area }),
+          ...(input.subArea !== undefined && { subArea: input.subArea }),
+          ...(input.summary !== undefined && input.summary.length > 0 && { summary: input.summary }),
+          ...(input.messages !== undefined && input.messages.length > 0 && { messages: input.messages }),
+          ...(input.maxContextChars !== undefined && { maxContextChars: input.maxContextChars }),
         }),
         cache: 'no-store',
         signal: controller.signal,
@@ -170,11 +193,6 @@ export async function POST(req: Request) {
       return errorResponse(413, 'PAYLOAD_TOO_LARGE', 'Payload too large');
     }
 
-    const convexUrl = getConvexUrl();
-    if (!convexUrl) {
-      return errorResponse(500, 'CONFIG_ERROR', 'Missing Convex URL configuration.');
-    }
-
     let body: RequestBody;
     try {
       body = (await req.json()) as RequestBody;
@@ -193,13 +211,9 @@ export async function POST(req: Request) {
       return errorResponse(400, 'BAD_REQUEST', 'Message too long (max 1200 chars).');
     }
 
-    const client = new ConvexHttpClient(convexUrl);
-
     let existingChats: any[];
     try {
-      existingChats = await (client as any).query('chats:listChats', {
-        organizationId: body.organizationId,
-      });
+      existingChats = await listChats({ organizationId: body.organizationId });
     } catch (err) {
       return errorResponse(502, 'CONVEX_ERROR', 'Failed to validate chat against Convex.', {
         retryable: true,
@@ -211,11 +225,16 @@ export async function POST(req: Request) {
       return errorResponse(400, 'CHAT_NOT_FOUND', 'Invalid chatId. The selected chat no longer exists.');
     }
 
+    const currentChat = existingChats.find((c: any) => c?._id === chatId) as
+      | { _id: string; agentId?: string; agent?: { name: string; area?: string; subArea?: string }; summary?: string; summaryUpdatedAt?: string }
+      | undefined;
+    const agentId = currentChat?.agentId;
+    const area = currentChat?.agent?.area;
+    const subArea = currentChat?.agent?.subArea;
+    const hasSummary = Boolean(currentChat?.summary?.trim());
+
     try {
-      await (client as any).mutation('chats:sendMessage', {
-        chatId,
-        content: message,
-      });
+      await sendMessage({ chatId, content: message });
     } catch (err) {
       return errorResponse(502, 'CONVEX_ERROR', 'Failed to persist user message.', {
         retryable: true,
@@ -223,10 +242,38 @@ export async function POST(req: Request) {
       });
     }
 
+    let contextMessages: BridgeInput['messages'] = [];
+    try {
+      const allMessages = await listMessages({ chatId });
+      const limit = hasSummary ? BRIDGE_CONTEXT_LAST_N_WHEN_SUMMARY : BRIDGE_CONTEXT_LAST_N;
+      const lastN = allMessages.slice(-limit).map((m: any) => {
+        const content = String(m.content ?? '').trim();
+        const truncated =
+          content.length <= BRIDGE_CONTEXT_MAX_CONTENT_CHARS
+            ? content
+            : content.slice(0, BRIDGE_CONTEXT_MAX_CONTENT_CHARS) + '…';
+        return {
+          authorType: m.authorType,
+          authorId: m.authorId ?? '',
+          content: truncated,
+          createdAt: m.createdAt,
+        };
+      });
+      contextMessages = lastN;
+    } catch {
+      // Proceed without context if listing fails
+    }
+
     const bridge = await callOpenClawBridge({
       chatId,
       message,
       model: body.model,
+      agentId,
+      area,
+      subArea,
+      ...(hasSummary && currentChat?.summary && { summary: currentChat.summary.trim() }),
+      messages: contextMessages.length > 0 ? contextMessages : undefined,
+      maxContextChars: BRIDGE_CONTEXT_MAX_CHARS,
     });
 
     if (!bridge.ok) {
@@ -237,11 +284,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      await (client as any).mutation('chats:sendAgentMessage', {
-        chatId,
-        content: bridge.text,
-        authorId: 'AgentMotus',
-      });
+      await sendAgentMessage({ chatId, content: bridge.text, authorId: 'AgentMotus' });
     } catch (err) {
       return errorResponse(502, 'CONVEX_ERROR', 'Agent reply received but failed to persist.', {
         retryable: true,

@@ -1,22 +1,46 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { authzError, requireEntity, requireOrgMembership, resolveOrgForUser } from './lib/authz';
+import { DEFAULT_AGENT_AREA, areaValidator, isValidSubAreaForArea, subAreaValidator } from './lib/agentAreas';
 
 export const createChat = mutation({
   args: {
     title: v.optional(v.string()),
     organizationId: v.optional(v.id('organizations')),
+    area: v.optional(areaValidator),
+    subArea: subAreaValidator,
   },
   handler: async (ctx, args) => {
     const { organizationId } = await resolveOrgForUser(ctx, args.organizationId, 'operator');
 
     const now = new Date().toISOString();
-    const chatId = await ctx.db.insert('chats', {
-      title: args.title?.trim() || 'New Chat',
+    const title = args.title?.trim() || 'New Chat';
+    const area = args.area ?? DEFAULT_AGENT_AREA;
+    const subArea = args.subArea;
+    if (!isValidSubAreaForArea(area, subArea)) {
+      throw new Error(`Invalid sub-area "${subArea}" for area "${area}".`);
+    }
+
+    // Create a sub-agent backing this chat (1:1).
+    const agentId = await ctx.db.insert('agents', {
       organizationId,
+      name: title.slice(0, 80) || 'Chat agent',
+      status: 'active',
+      createdAt: now,
+      area,
+      subArea,
+    });
+
+    const chatId = await ctx.db.insert('chats', {
+      title,
+      organizationId,
+      agentId,
       createdAt: now,
       updatedAt: now,
     });
+
+    await ctx.db.patch(agentId, { chatId });
+
     return chatId;
   },
 });
@@ -43,10 +67,14 @@ export const listChats = query({
           .order('desc')
           .first();
 
+        const agent = chat.agentId ? await ctx.db.get(chat.agentId) : null;
         return {
           ...chat,
           lastMessage: last?.content ?? '',
           lastMessageAt: last?.createdAt ?? chat.updatedAt,
+          agent: agent
+            ? { name: agent.name, area: agent.area, subArea: agent.subArea }
+            : undefined,
         };
       })
     );

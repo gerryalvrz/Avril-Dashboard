@@ -1,9 +1,17 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
+import {
+  AGENT_AREAS,
+  DEFAULT_AGENT_AREA,
+  getSubAreasForArea,
+  type AgentArea,
+  type AgentSubArea,
+} from '@/src/lib/agentAreas';
 
 type Chat = {
   _id: string;
@@ -11,6 +19,7 @@ type Chat = {
   updatedAt: string;
   lastMessage?: string;
   lastMessageAt?: string;
+  agent?: { name: string; area?: string; subArea?: string };
 };
 
 type Msg = {
@@ -56,6 +65,7 @@ function extractServerError(payload: ApiErrorPayload | null, fallback = 'Unknown
 }
 
 export default function ChatsPage() {
+  const searchParams = useSearchParams();
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -64,8 +74,23 @@ export default function ChatsPage() {
   const [model, setModel] = useState<ModelChoice>('codex');
   const [streamingText, setStreamingText] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
+  const [newChatArea, setNewChatArea] = useState<AgentArea>(DEFAULT_AGENT_AREA);
+  const [newChatSubArea, setNewChatSubArea] = useState<AgentSubArea | ''>('');
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const subAreaOptions = useMemo(() => getSubAreasForArea(newChatArea), [newChatArea]);
+
+  const createChatPayload = useMemo(
+    () => ({
+      title: `Chat ${chats.length + 1}`,
+      area: newChatArea,
+      ...(subAreaOptions.includes(newChatSubArea as AgentSubArea) && newChatSubArea
+        ? { subArea: newChatSubArea as AgentSubArea }
+        : {}),
+    }),
+    [chats.length, newChatArea, newChatSubArea, subAreaOptions]
+  );
 
   const loadState = async (chatId?: string | null) => {
     const query = chatId ? `?chatId=${encodeURIComponent(chatId)}` : '';
@@ -96,6 +121,11 @@ export default function ChatsPage() {
     const savedModel = localStorage.getItem('agentdashboard:model') as ModelChoice | null;
     if (savedModel === 'codex' || savedModel === 'opus') setModel(savedModel);
   }, []);
+
+  useEffect(() => {
+    const chatIdFromUrl = searchParams.get('chatId')?.trim();
+    if (chatIdFromUrl) setSelectedChatId(chatIdFromUrl);
+  }, [searchParams]);
 
   useEffect(() => {
     localStorage.setItem('agentdashboard:model', model);
@@ -134,7 +164,7 @@ export default function ChatsPage() {
     const res = await fetch('/api/chat/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: `Chat ${chats.length + 1}` }),
+      body: JSON.stringify(createChatPayload),
     });
     if (!res.ok) {
       setStatusMessage('❌ No se pudo crear el chat.');
@@ -164,7 +194,13 @@ export default function ChatsPage() {
       const createRes = await fetch('/api/chat/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'New Chat' }),
+        body: JSON.stringify({
+          title: 'New Chat',
+          area: newChatArea,
+          ...(subAreaOptions.includes(newChatSubArea as AgentSubArea) && newChatSubArea
+            ? { subArea: newChatSubArea as AgentSubArea }
+            : {}),
+        }),
       });
       if (!createRes.ok) {
         setStatusMessage('❌ No se pudo crear un chat para enviar el mensaje.');
@@ -206,6 +242,9 @@ export default function ChatsPage() {
           setStatusMessage(`❌ ${serverError} Crea/selecciona otro chat y reintenta.`);
           setSelectedChatId(null);
           await loadState(null);
+        } else if (res.status === 502 && (serverError.includes('fetch failed') || serverError.toLowerCase().includes('bridge'))) {
+          setStatusMessage(`❌ El agente no está alcanzable (bridge/túnel). Comprueba que OPENCLAW_BRIDGE_URL esté activo y el túnel corriendo.`);
+          await loadState(chatId);
         } else {
           setStatusMessage(`❌ Error del servidor (${res.status}): ${serverError}`);
           await loadState(chatId);
@@ -241,14 +280,53 @@ export default function ChatsPage() {
   return (
     <div className="flex gap-4 h-[calc(100vh-5rem)]">
       <div className="w-72 bg-panel border border-border rounded-xl overflow-y-auto flex-shrink-0">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-semibold text-sm">Threads</h3>
-          <button
-            onClick={handleCreateChat}
-            className="text-xs px-2 py-1 bg-accent hover:bg-accent-hover rounded-md text-white"
-          >
-            + New
-          </button>
+        <div className="p-4 border-b border-border space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Threads</h3>
+            <button
+              onClick={handleCreateChat}
+              className="text-xs px-2 py-1 bg-accent hover:bg-accent-hover rounded-md text-white"
+            >
+              + New
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label className="block text-muted mb-0.5">Area</label>
+              <select
+                value={newChatArea}
+                onChange={(e) => {
+                  const a = e.target.value as AgentArea;
+                  setNewChatArea(a);
+                  const opts = getSubAreasForArea(a);
+                  setNewChatSubArea(opts.length ? '' : '');
+                }}
+                className="w-full bg-surface border border-border rounded px-2 py-1 text-gray-200"
+              >
+                {AGENT_AREAS.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-muted mb-0.5">Sub-area</label>
+              <select
+                value={newChatSubArea}
+                onChange={(e) => setNewChatSubArea(e.target.value as AgentSubArea | '')}
+                className="w-full bg-surface border border-border rounded px-2 py-1 text-gray-200"
+                disabled={subAreaOptions.length === 0}
+              >
+                <option value="">—</option>
+                {subAreaOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         {chats.map((t) => (
@@ -262,6 +340,13 @@ export default function ChatsPage() {
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-medium text-white truncate">{t.title}</span>
             </div>
+            {t.agent && (
+              <p className="text-[10px] text-muted/80 mb-0.5">
+                {t.agent.name}
+                {(t.agent.area || t.agent.subArea) &&
+                  ` · ${[t.agent.area, t.agent.subArea].filter(Boolean).join(' → ')}`}
+              </p>
+            )}
             <p className="text-xs text-muted truncate">{t.lastMessage || 'No messages yet'}</p>
             <p className="text-[10px] text-muted/60 mt-0.5">{timeLabel(t.lastMessageAt || t.updatedAt)}</p>
           </button>
@@ -274,6 +359,13 @@ export default function ChatsPage() {
         <div className="p-4 border-b border-border flex items-center justify-between gap-4">
           <div className="min-w-0">
             <h3 className="font-semibold text-sm">{selectedChat?.title || 'Select a chat'}</h3>
+            {selectedChat?.agent && (
+              <p className="text-xs text-muted mt-0.5">
+                {selectedChat.agent.name}
+                {(selectedChat.agent.area || selectedChat.agent.subArea) &&
+                  ` · ${[selectedChat.agent.area, selectedChat.agent.subArea].filter(Boolean).join(' → ')}`}
+              </p>
+            )}
             {statusMessage && <p className="text-[11px] text-yellow-300 mt-1 truncate">{statusMessage}</p>}
           </div>
           <div className="flex items-center gap-2 text-xs">

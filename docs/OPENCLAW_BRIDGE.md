@@ -41,3 +41,4 @@ Use `tmux` or `systemd`/`pm2` so bridge + tunnel survive disconnects.
 - Bridge endpoint requires Bearer token.
 - Dashboard route `/api/chat/respond` now calls this bridge first.
 - If bridge is unavailable, response falls back to a setup warning.
+- **Contract:** Request/response schema and bounded context (agent id, area, sub-area, scoped prompt stuffing) are defined in [BRIDGE_CONTRACT.md](./BRIDGE_CONTRACT.md).

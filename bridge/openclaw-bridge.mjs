@@ -9,6 +9,7 @@ const TOKEN = process.env.OPENCLAW_BRIDGE_TOKEN;
 const ROUTE = process.env.OPENCLAW_BRIDGE_ROUTE || '/respond';
 const VIRTUAL_TO = process.env.OPENCLAW_BRIDGE_TO || '+19999999999';
 const TIMEOUT_SEC = Number(process.env.OPENCLAW_BRIDGE_TIMEOUT_SEC || 90);
+const DEFAULT_MAX_CONTEXT_CHARS = Number(process.env.OPENCLAW_BRIDGE_MAX_CONTEXT_CHARS || 12000);
 
 if (!TOKEN) {
   console.error('Missing OPENCLAW_BRIDGE_TOKEN');
@@ -79,12 +80,45 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    const agentId = body?.agentId;
+    const area = body?.area;
+    const subArea = body?.subArea;
+    const summary = typeof body?.summary === 'string' ? body.summary.trim() : '';
+    const messages = Array.isArray(body?.messages) ? body.messages : [];
+    const maxContextChars = typeof body?.maxContextChars === 'number' && body.maxContextChars > 0
+      ? body.maxContextChars
+      : (DEFAULT_MAX_CONTEXT_CHARS > 0 ? DEFAULT_MAX_CONTEXT_CHARS : null);
+
+    const parts = [];
+    if (summary.length > 0) {
+      parts.push(`(Summary of earlier conversation)\n${summary}`);
+    }
+    if (messages.length > 0) {
+      const contextLines = messages.map((m) => {
+        const who = m.authorType === 'human' ? 'User' : (m.authorId || 'Agent');
+        return `[${who}]: ${String(m.content || '').trim()}`;
+      });
+      let contextBlock = contextLines.join('\n');
+      if (maxContextChars != null && contextBlock.length > maxContextChars) {
+        const truncated = contextBlock.slice(-maxContextChars);
+        const firstLineEnd = truncated.indexOf('\n');
+        contextBlock = firstLineEnd > 0 ? truncated.slice(firstLineEnd + 1) : truncated;
+      }
+      parts.push(`(Context — last ${messages.length} messages)\n${contextBlock}`);
+    }
+    parts.push(`(Current user message)\n${message}`);
+    let payloadMessage = parts.join('\n\n');
+    if (agentId != null || area != null || subArea != null) {
+      const meta = [agentId && `agentId=${agentId}`, area && `area=${area}`, subArea && `subArea=${subArea}`].filter(Boolean).join(', ');
+      payloadMessage = `[Agent context: ${meta}]\n\n${payloadMessage}`;
+    }
+
     const args = [
       'agent',
       '--to',
       VIRTUAL_TO,
       '--message',
-      message,
+      payloadMessage,
       '--timeout',
       String(TIMEOUT_SEC),
       '--json',
@@ -113,6 +147,6 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`OpenClaw bridge listening on http://127.0.0.1:${PORT}${ROUTE}`);
+server.listen(PORT, () => {
+  console.log(`OpenClaw bridge listening on http://0.0.0.0:${PORT}${ROUTE}`);
 });

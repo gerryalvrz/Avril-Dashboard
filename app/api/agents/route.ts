@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getClientIp, hitRateLimit, requireDashboardToken } from '@/src/lib/apiSecurity';
-import { listChats, listMessages } from '@/src/lib/convexServer';
+import { listAgents } from '@/src/lib/convexServer';
 
 export async function GET(req: Request) {
   try {
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
     }
 
     const ip = getClientIp(req);
-    if (hitRateLimit(`state:${ip}`, 300)) {
+    if (hitRateLimit(`agents:${ip}`, 60)) {
       return NextResponse.json(
         { ok: false, error: { code: 'RATE_LIMITED', message: 'Rate limit exceeded', retryable: true } },
         { status: 429 }
@@ -17,32 +17,18 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const chatId = searchParams.get('chatId')?.trim();
     const organizationId = searchParams.get('organizationId')?.trim() ?? undefined;
 
-    const chats = await listChats({ organizationId });
+    const agents = await listAgents({ organizationId });
 
-    if (!chatId) {
-      return NextResponse.json({ ok: true, chats, messages: [] });
-    }
-
-    if (!Array.isArray(chats) || !chats.some((c: any) => c?._id === chatId)) {
-      return NextResponse.json(
-        { ok: false, error: { code: 'CHAT_NOT_FOUND', message: 'Invalid chatId. The selected chat no longer exists.' } },
-        { status: 400 }
-      );
-    }
-
-    const messages = await listMessages({ chatId });
-
-    return NextResponse.json({ ok: true, chats, messages });
+    return NextResponse.json({ ok: true, agents: agents ?? [] });
   } catch (err) {
     return NextResponse.json(
       {
         ok: false,
         error: {
-          code: 'STATE_FETCH_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to fetch chat state',
+          code: 'AGENTS_FETCH_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to fetch agents',
           retryable: true,
         },
       },

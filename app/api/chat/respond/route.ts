@@ -242,7 +242,7 @@ export async function POST(req: Request) {
       });
     }
 
-    let contextMessages: BridgeInput['messages'] = [];
+    let contextMessages: NonNullable<BridgeInput['messages']> = [];
     try {
       const allMessages = await listMessages({ chatId });
       const limit = hasSummary ? BRIDGE_CONTEXT_LAST_N_WHEN_SUMMARY : BRIDGE_CONTEXT_LAST_N;

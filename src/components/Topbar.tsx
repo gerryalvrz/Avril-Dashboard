@@ -33,12 +33,12 @@ export default function Topbar({ onOpenMenu }: TopbarProps) {
   };
 
   return (
-    <header className="fixed top-0 left-0 md:left-56 right-0 h-14 bg-panel/80 backdrop-blur border-b border-border flex items-center justify-between px-4 md:px-6 z-20">
+    <header className="fixed top-0 left-0 md:left-64 right-0 h-16 glass-navbar flex items-center justify-between px-4 md:px-6 z-20">
       <div className="flex items-center gap-3">
-        <button onClick={onOpenMenu} aria-label="Open menu" className="md:hidden text-lg text-muted hover:text-white">
+        <button onClick={onOpenMenu} aria-label="Open menu" className="md:hidden text-lg text-muted hover:text-white smooth-transition">
           ☰
         </button>
-        <h1 className="text-base font-semibold text-white">{title}</h1>
+        <h1 className="text-base font-semibold text-white font-heading">{title}</h1>
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
@@ -46,15 +46,12 @@ export default function Topbar({ onOpenMenu }: TopbarProps) {
         {address && (
           <button
             onClick={() => void handleCopy()}
-            className="text-xs px-2 py-1 border border-border rounded-md text-muted hover:text-white hover:border-accent"
+            className="btn-ghost text-xs"
           >
             {copied ? 'Copied' : 'Copy address'}
           </button>
         )}
-        <button
-          onClick={() => void logout()}
-          className="text-xs px-2 py-1 border border-border rounded-md text-muted hover:text-white hover:border-accent"
-        >
+        <button onClick={() => void logout()} className="btn-ghost text-xs">
           Logout
         </button>
       </div>

@@ -20,17 +20,15 @@ const PRIORITY_STYLE: Record<string, string> = {
 
 export default function TasksPage() {
   return (
-    <div>
+    <div className="font-sans">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Tasks</h2>
-        <button className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg transition-colors">
-          + New Task
-        </button>
+        <h2 className="modern-typography-medium gradient-text">Tasks</h2>
+        <button className="btn-primary text-sm">+ New Task</button>
       </div>
-      <div className="bg-panel border border-border rounded-xl overflow-hidden">
+      <div className="glass overflow-hidden rounded-2xl">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-muted text-left">
+            <tr className="border-b border-white/10 text-muted text-left">
               <th className="px-5 py-3 font-medium">ID</th>
               <th className="px-5 py-3 font-medium">Title</th>
               <th className="px-5 py-3 font-medium">Status</th>
@@ -40,7 +38,7 @@ export default function TasksPage() {
           </thead>
           <tbody>
             {TASKS.map((t) => (
-              <tr key={t.id} className="border-b border-border/50 hover:bg-white/[0.02]">
+              <tr key={t.id} className="border-b border-white/5 hover:bg-white/[0.02] smooth-transition">
                 <td className="px-5 py-3 text-muted font-mono text-xs">{t.id}</td>
                 <td className="px-5 py-3 text-white">{t.title}</td>
                 <td className="px-5 py-3">

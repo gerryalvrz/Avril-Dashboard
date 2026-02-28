@@ -29,14 +29,14 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-screen w-56 bg-panel border-r border-border flex flex-col py-6 px-3 z-40 transform transition-transform duration-200 ${
+        className={`fixed top-0 left-0 h-screen w-64 glass-sidebar flex flex-col py-6 px-3 z-40 transform transition-transform duration-200 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
         <div className="flex items-center justify-between gap-2 px-3 mb-8">
           <div className="flex items-center gap-2">
             <span className="text-2xl">⚡</span>
-            <span className="text-lg font-bold tracking-tight text-white">AgentDashboard</span>
+            <span className="text-lg font-bold tracking-tight text-white font-heading">AgentDashboard</span>
           </div>
           <button
             className="md:hidden text-muted hover:text-white"
@@ -55,7 +55,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all smooth-transition ${
                   active
                     ? 'bg-accent/15 text-accent'
                     : 'text-muted hover:text-white hover:bg-white/5'
@@ -68,7 +68,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           })}
         </nav>
 
-        <div className="px-3 pt-4 border-t border-border">
+        <div className="px-3 pt-4 border-t border-white/10">
           <div className="flex items-center gap-2 text-xs text-muted">
             <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
             AgentMotus · Online

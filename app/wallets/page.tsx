@@ -12,28 +12,26 @@ const ACTIVITY = [
 
 export default function WalletsPage() {
   return (
-    <div>
+    <div className="font-sans">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Wallets</h2>
-        <button className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg transition-colors">
-          + Create Wallet
-        </button>
+        <h2 className="modern-typography-medium gradient-text">Wallets</h2>
+        <button className="btn-primary text-sm">+ Create Wallet</button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
         {WALLETS.map((w) => (
-          <div key={w.address} className="bg-panel border border-border rounded-xl p-5">
+          <div key={w.address} className="glass p-5 smooth-transition hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(124,58,237,0.2)]">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold text-white">{w.label}</span>
+              <span className="text-sm font-bold text-white font-heading">{w.label}</span>
               <span className="text-xs text-muted font-mono">{w.address}</span>
             </div>
-            <p className="text-2xl font-bold text-white mb-1">{w.balance}</p>
+            <p className="text-2xl font-bold text-white font-heading mb-1">{w.balance}</p>
             <p className="text-xs text-muted mb-2">Provider: {w.provider}</p>
             <p className="text-xs text-muted">Permissions: {w.permissions}</p>
           </div>
         ))}
       </div>
-      <div className="bg-panel border border-border rounded-xl p-5">
-        <h3 className="font-semibold mb-3">Recent Wallet Activity</h3>
+      <div className="glass-strong p-6">
+        <h3 className="font-semibold font-heading mb-3">Recent Wallet Activity</h3>
         <ul className="space-y-2 text-sm text-muted">
           {ACTIVITY.map((a, i) => (
             <li key={i}>

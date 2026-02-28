@@ -9,21 +9,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isReady, isAuthenticated, login, address } = useWaaP();
 
-  if (!isReady) {
-    return <main className="min-h-screen grid place-items-center text-sm text-muted">Initializing WaaP…</main>;
+    if (!isReady) {
+    return <main className="min-h-screen grid place-items-center text-sm text-muted font-sans">Initializing WaaP…</main>;
   }
 
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen grid place-items-center p-6">
-        <div className="w-full max-w-md bg-panel border border-border rounded-xl p-6 text-center">
-          <h1 className="text-xl font-bold text-white mb-2">AgentDashboard</h1>
+        <div className="w-full max-w-md glass p-8 text-center">
+          <h1 className="modern-typography-medium gradient-text mb-2">AgentDashboard</h1>
           <p className="text-sm text-muted mb-4">Login with Human.tech (WaaP) using your owner wallet.</p>
           {address && <p className="text-xs text-yellow-300 mb-3">Connected wallet not allowed: {address}</p>}
-          <button
-            onClick={() => void login()}
-            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg text-sm font-medium"
-          >
+          <button onClick={() => void login()} className="btn-primary">
             Login with WaaP
           </button>
         </div>
@@ -35,7 +32,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <>
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <Topbar onOpenMenu={() => setMobileOpen(true)} />
-      <main className="mt-14 p-4 md:p-6 min-h-[calc(100vh-3.5rem)] md:ml-56">{children}</main>
+      <main className="flex-1 pt-16 md:pt-20 md:ml-64 p-4 md:p-6 min-h-screen max-w-full">{children}</main>
     </>
   );
 }

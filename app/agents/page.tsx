@@ -62,13 +62,10 @@ export default function AgentsPage() {
   }, []);
 
   return (
-    <div>
+    <div className="font-sans">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Workers (Office)</h2>
-        <Link
-          href="/chats"
-          className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg transition-colors"
-        >
+        <h2 className="modern-typography-medium gradient-text">Workers (Office)</h2>
+        <Link href="/chats" className="btn-primary text-sm">
           New chat (creates worker)
         </Link>
       </div>
@@ -82,10 +79,10 @@ export default function AgentsPage() {
       {loading ? (
         <p className="text-sm text-muted">Loading workers…</p>
       ) : (
-        <div className="bg-panel border border-border rounded-xl overflow-hidden">
+        <div className="glass overflow-hidden rounded-2xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-muted text-left">
+              <tr className="border-b border-white/10 text-muted text-left">
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Area</th>
                 <th className="px-5 py-3 font-medium">Sub-area</th>
@@ -96,7 +93,7 @@ export default function AgentsPage() {
             </thead>
             <tbody>
               {agents.map((a) => (
-                <tr key={a._id} className="border-b border-border/50 hover:bg-white/[0.02]">
+                <tr key={a._id} className="border-b border-white/5 hover:bg-white/[0.02] smooth-transition">
                   <td className="px-5 py-3 text-white font-medium">{a.name}</td>
                   <td className="px-5 py-3 text-muted">{a.area ?? '—'}</td>
                   <td className="px-5 py-3 text-muted">{a.subArea ?? '—'}</td>

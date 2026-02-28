@@ -78,7 +78,8 @@
 ### Phase 3: Agent manager UX
 
 - [x] **Worker-centric view** *(done)*  
-  Dashboard view (e.g. Agents page or “Office”): list sub-agents (workers) with area, sub-area, status, last activity, link to their chat.
+
+
 
 - [ ] **Filter by area/sub-area**  
   Filter and group agents (and chats) by area and sub-area.

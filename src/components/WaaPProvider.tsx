@@ -28,6 +28,7 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     let mounted = true;
+    let removeListener: (() => void) | undefined;
 
     async function boot() {
       try {
@@ -46,18 +47,18 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
           useStaging: false,
         } as any);
 
-        const accounts = await window.waap?.request?.({ method: 'eth_requestAccounts' });
-        if (!mounted) return;
-        const addr = Array.isArray(accounts) ? accounts[0] : null;
+        // Attach listener only after SDK is initialized (window.waap is now set)
+        const onAccountsChanged = (accounts: string[]) => {
+          const addr = Array.isArray(accounts) ? accounts[0] : null;
+          setAddress(addr ? String(addr).toLowerCase() : null);
+        };
+        window.waap?.on?.('accountsChanged', onAccountsChanged);
+        removeListener = () => window.waap?.removeListener?.('accountsChanged', onAccountsChanged);
 
-        if (!addr) {
-          setAddress(null);
-          return;
-        }
-
-        const normalized = String(addr).toLowerCase();
-
-        setAddress(normalized);
+        // Do NOT call eth_requestAccounts automatically here.
+        // The SDK's auto-connect falls back to window.ethereum.request() without
+        // optional chaining; if window.ethereum is broken (e.g. evmAsk.js conflict),
+        // this throws an uncaught "t is not a function". Let the user connect manually.
       } catch {
         if (mounted) setAddress(null);
       } finally {
@@ -67,16 +68,9 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
 
     void boot();
 
-    const onAccountsChanged = (accounts: string[]) => {
-      const addr = Array.isArray(accounts) ? accounts[0] : null;
-      setAddress(addr ? String(addr).toLowerCase() : null);
-    };
-
-    window.waap?.on?.('accountsChanged', onAccountsChanged);
-
     return () => {
       mounted = false;
-      window.waap?.removeListener?.('accountsChanged', onAccountsChanged);
+      removeListener?.();
     };
   }, []);
 

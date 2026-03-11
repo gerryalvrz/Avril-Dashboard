@@ -1,7 +1,7 @@
 const WALLETS = [
-  { address: '0x7a3…f12', label: 'Treasury', provider: 'Human.tech', balance: '2.4 SOL', permissions: 'Owner + Admin' },
-  { address: '0x1b9…a03', label: 'Operations', provider: 'AA Service', balance: '0.8 SOL', permissions: 'Admin + Operator' },
-  { address: '0x4e2…d77', label: 'Agent Wallet', provider: 'AA Service', balance: '0.1 SOL', permissions: 'Operator (execute)' },
+  { address: '0x7a3…f12', label: 'Treasury', provider: 'Human.tech', balance: '2.4 CELO', permissions: 'Owner + Admin' },
+  { address: '0x1b9…a03', label: 'Operations', provider: 'AA Service', balance: '0.8 CELO', permissions: 'Admin + Operator' },
+  { address: '0x4e2…d77', label: 'Agent Wallet', provider: 'AA Service', balance: '0.1 CELO', permissions: 'Operator (execute)' },
 ];
 
 const ACTIVITY = [

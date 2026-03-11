@@ -18,36 +18,6 @@ const WaaPContext = createContext<WaaPContextType>({
   logout: async () => {},
 });
 
-const OWNER_WALLET = (process.env.NEXT_PUBLIC_OWNER_WALLET || '').toLowerCase();
-
-function authMessage(nonce: string) {
-  return `AgentDashboard auth nonce: ${nonce}`;
-}
-
-async function establishOwnerSession(address: string) {
-  const nonceRes = await fetch('/api/auth/nonce', { method: 'GET', cache: 'no-store' });
-  if (!nonceRes.ok) return false;
-
-  const { nonce } = (await nonceRes.json()) as { nonce?: string };
-  if (!nonce) return false;
-
-  const message = authMessage(nonce);
-  const signature = await window.waap?.request?.({
-    method: 'personal_sign',
-    params: [message, address],
-  });
-
-  if (!signature || typeof signature !== 'string') return false;
-
-  const sessionRes = await fetch('/api/auth/session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ address, signature }),
-  });
-
-  return sessionRes.ok;
-}
-
 export function useWaaP() {
   return useContext(WaaPContext);
 }
@@ -86,21 +56,6 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
         }
 
         const normalized = String(addr).toLowerCase();
-        if (OWNER_WALLET && normalized !== OWNER_WALLET) {
-          setAddress(normalized);
-          return;
-        }
-
-        const check = await fetch('/api/auth/session', { method: 'GET', cache: 'no-store' });
-        const hasSession = check.ok && ((await check.json()) as { ok?: boolean }).ok;
-
-        if (!hasSession) {
-          const sessionOk = await establishOwnerSession(normalized);
-          if (!sessionOk) {
-            setAddress(null);
-            return;
-          }
-        }
 
         setAddress(normalized);
       } catch {
@@ -127,7 +82,7 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
 
   const ctx = useMemo<WaaPContextType>(() => {
     const normalized = (address || '').toLowerCase();
-    const isAuthenticated = !!normalized && (!!OWNER_WALLET ? normalized === OWNER_WALLET : true);
+    const isAuthenticated = !!normalized;
 
     return {
       address,
@@ -143,22 +98,9 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
           return;
         }
 
-        if (OWNER_WALLET && addr !== OWNER_WALLET) {
-          setAddress(addr);
-          return;
-        }
-
-        const ok = await establishOwnerSession(addr);
-        if (!ok) {
-          await window.waap?.logout?.();
-          setAddress(null);
-          return;
-        }
-
         setAddress(addr);
       },
       logout: async () => {
-        await fetch('/api/auth/session', { method: 'DELETE' });
         await window.waap?.logout?.();
         setAddress(null);
       },

@@ -5,6 +5,7 @@ const SESSION_COOKIE = 'ad_session';
 
 type SessionPayload = {
   address: string;
+  human: boolean;
   exp: number;
 };
 
@@ -57,9 +58,10 @@ export function clearNonceCookie() {
   return `${NONCE_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
 
-export function createSessionToken(address: string) {
+export function createSessionToken(address: string, options?: { human?: boolean }) {
   const payload: SessionPayload = {
     address: address.toLowerCase(),
+    human: options?.human === true,
     exp: Date.now() + 1000 * 60 * 60 * 12,
   };
   const body = b64url(JSON.stringify(payload));
@@ -96,10 +98,14 @@ export function readSession(req: Request): SessionPayload | null {
     const parsed = JSON.parse(fromB64url(body)) as SessionPayload;
     if (!parsed?.address || typeof parsed.exp !== 'number') return null;
     if (Date.now() > parsed.exp) return null;
-    return parsed;
+    return { ...parsed, human: parsed.human === true };
   } catch {
     return null;
   }
+}
+
+export function requireSession(req: Request) {
+  return !!readSession(req);
 }
 
 export function requireOwnerSession(req: Request) {
@@ -108,6 +114,11 @@ export function requireOwnerSession(req: Request) {
   if (!session) return false;
   if (!owner) return true;
   return session.address === owner;
+}
+
+export function requireHumanSession(req: Request) {
+  const session = readSession(req);
+  return !!session?.human;
 }
 
 export { NONCE_COOKIE, SESSION_COOKIE };

@@ -7,7 +7,7 @@ import {
   createSessionToken,
   getNonceFromRequest,
   hasSessionSecret,
-  requireOwnerSession,
+  readSession,
 } from '@/src/lib/sessionAuth';
 
 type Body = {
@@ -35,7 +35,6 @@ export async function POST(req: Request) {
   const body = (await req.json()) as Body;
   const address = (body.address || '').toLowerCase();
   const signature = body.signature || '';
-  const owner = (process.env.NEXT_PUBLIC_OWNER_WALLET || '').toLowerCase();
 
   if (!address || !signature) {
     return NextResponse.json({ error: 'address and signature are required.' }, { status: 400 });
@@ -49,11 +48,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid signature.' }, { status: 401 });
     }
 
-    if (owner && recovered !== owner) {
-      return NextResponse.json({ error: 'Wallet not allowed.' }, { status: 403 });
-    }
-
-    const token = createSessionToken(recovered);
+    const token = createSessionToken(recovered, { human: false });
     if (!token) {
       return NextResponse.json({ error: 'Session secret missing.' }, { status: 500 });
     }
@@ -68,7 +63,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  return NextResponse.json({ ok: requireOwnerSession(req) });
+  return NextResponse.json({ ok: !!readSession(req) });
 }
 
 export async function DELETE() {

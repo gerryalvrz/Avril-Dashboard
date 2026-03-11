@@ -5,6 +5,7 @@ import { useWaaP } from './WaaPProvider';
 
 const TITLES: Record<string, string> = {
   '/home': 'Home',
+  '/verify': 'Verification',
   '/agents': 'Agents',
   '/tasks': 'Tasks',
   '/chats': 'Chats',

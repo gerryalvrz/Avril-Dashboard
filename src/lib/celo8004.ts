@@ -5,11 +5,6 @@ const identityRegistryAbi = [
   'function register(string agentURI, bytes metadata) returns (uint256)',
 ];
 
-type Eip1193RequestArgs = {
-  method: string;
-  params?: unknown[] | Record<string, unknown>;
-};
-
 async function ensureCeloChain() {
   const chainId = (await window.waap?.request?.({ method: 'eth_chainId' as const })) as string | undefined;
   if (chainId?.toLowerCase() === CELO_CHAIN_ID_HEX) return;
@@ -17,8 +12,9 @@ async function ensureCeloChain() {
   try {
     await window.waap?.request?.({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: CELO_CHAIN_ID_HEX }],
-    } as Eip1193RequestArgs);
+      // WaaP typings expect params: unknown[]; cast to satisfy TS
+      params: [{ chainId: CELO_CHAIN_ID_HEX }] as unknown[],
+    });
   } catch (err: any) {
     if (err?.code !== 4902) throw err;
 
@@ -33,8 +29,8 @@ async function ensureCeloChain() {
           rpcUrls: rpcUrl ? [rpcUrl] : [],
           blockExplorerUrls: ['https://celoscan.io'],
         },
-      ],
-    } as Eip1193RequestArgs);
+      ] as unknown[],
+    });
   }
 }
 
@@ -70,8 +66,8 @@ export async function registerAgentIdentityOnCelo(agentURI: string): Promise<str
         data,
         value: '0x0',
       },
-    ],
-  } as Eip1193RequestArgs)) as string;
+    ] as unknown[],
+  })) as string;
 
   return txHash;
 }

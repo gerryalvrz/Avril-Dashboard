@@ -3,6 +3,7 @@ const CELO_CHAIN_ID_HEX = '0xa4ec'; // 42220
 
 const identityRegistryAbi = [
   'function register(string agentURI, bytes metadata) returns (uint256)',
+  'function balanceOf(address owner) view returns (uint256)',
 ];
 
 async function ensureCeloChain() {
@@ -55,6 +56,32 @@ export async function registerAgentIdentityOnCelo(agentURI: string): Promise<str
 
   const { Interface } = await import('ethers');
   const iface = new Interface(identityRegistryAbi);
+
+  // Pre-check: if this wallet already has an agent identity, contract will revert
+  const rpcUrl = process.env.NEXT_PUBLIC_CELO_RPC_URL || 'https://forno.celo.org';
+  const balanceOfData = iface.encodeFunctionData('balanceOf', [from]);
+  const balanceRes = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_call',
+      params: [
+        { to: IDENTITY_REGISTRY_ADDRESS, data: balanceOfData },
+        'latest',
+      ],
+    }),
+  });
+  const balanceJson = (await balanceRes.json()) as { result?: string };
+  const balanceHex = balanceJson.result ?? '0x0';
+  const balance = BigInt(balanceHex);
+  if (balance > 0n) {
+    throw new Error(
+      'This wallet already has an ERC-8004 agent identity on Celo. Use a different wallet to register another agent, or update your existing agent’s URI on Celoscan (contract setAgentURI).'
+    );
+  }
+
   const data = iface.encodeFunctionData('register', [agentURI, '0x']);
 
   const txHash = (await window.waap.request({

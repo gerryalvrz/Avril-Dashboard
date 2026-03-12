@@ -25,6 +25,7 @@ export function useWaaP() {
 export default function WaaPProvider({ children }: { children: React.ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
 
   useEffect(() => {
     let mounted = true;
@@ -45,6 +46,7 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
             logo: process.env.NEXT_PUBLIC_WAAP_LOGO || '',
           },
           useStaging: false,
+          walletConnectProjectId: walletConnectProjectId || undefined,
         } as any);
 
         // Attach listener only after SDK is initialized (window.waap is now set)

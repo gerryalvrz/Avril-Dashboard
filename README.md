@@ -34,6 +34,41 @@ Chat API routes call Convex from the Next.js server using a shared secret so Con
 
 Pass the wallet address (e.g. from your session) to `verifyHumanTechSession(address)`; it returns a `HumanTechIdentity` if the address has a passing score, or `null` otherwise. If these env vars are not set, the function returns `null` (no verification).
 
+## ERC-8004 agent identity (Celo)
+
+The app can register an onchain agent identity on Celo using the global [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) registry. Registration JSON and logo are hosted in this repo and served on Vercel.
+
+**Setup:**
+
+1. **Deploy to Vercel** (or use your deployed URL). Set in `.env.local`:
+   - `NEXT_PUBLIC_APP_URL=https://agents.motusdao.org` (no trailing slash)
+   - `NEXT_PUBLIC_AGENT_REGISTRATION_URI=https://agents.motusdao.org/agent-registration.json`
+   - `NEXT_PUBLIC_CELO_RPC_URL=https://forno.celo.org` (optional; used when adding Celo in wallet)
+
+2. **Register onchain:** Open **Wallets** in the app → use **“Register ERC-8004 identity on Celo”**. Sign the tx with your WaaP wallet (you’ll be switched to Celo if needed).
+
+3. **Domain proof:** After the first registration, set in Vercel (or `.env.local`):
+   - `NEXT_PUBLIC_ERC8004_AGENT_ID=<tokenId>` (from the registry / tx logs)
+   - `NEXT_PUBLIC_ERC8004_AGENT_OWNER=<0xYourWallet>`
+
+**Hosted in this repo:**
+
+- **Logo:** `public/agent-logo.svg` (MotusDAO Hub icon). Served at `/agent-logo.svg`.
+- **Registration JSON:** `GET /agent-registration.json` (dynamic; uses `NEXT_PUBLIC_APP_URL`; default `https://agents.motusdao.org`).
+- **Agent card (A2A):** `GET /.well-known/agent-card.json`.
+- **Domain proof:** `GET /.well-known/agent-registration.json` (uses `NEXT_PUBLIC_ERC8004_AGENT_ID` and `NEXT_PUBLIC_ERC8004_AGENT_OWNER`).
+
+**Where to go when needed**
+
+| Need | Link |
+|------|------|
+| Deploy / env vars | [Vercel Dashboard](https://vercel.com/dashboard) → your project → Settings → Environment Variables |
+| Convex backend / env | [Convex Dashboard](https://dashboard.convex.dev) → your deployment → Settings → Environment Variables |
+| Human Passport (scores) | [developer.passport.xyz](https://developer.passport.xyz/) (API Keys, Scorers) |
+| WaaP (wallet) | [docs.wallet.human.tech](https://docs.wallet.human.tech/guides/start) – config in code (`initWaaP`), no dashboard |
+| Celo tx / contract | [Celoscan](https://celoscan.io) – look up your tx or `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` (IdentityRegistry) |
+| ERC-8004 spec / resources | [eips.ethereum.org/EIPS/eip-8004](https://eips.ethereum.org/EIPS/eip-8004), [8004.org](https://www.8004.org) |
+
 ## Included baseline
 - Modular architecture scaffold
 - Convex schema for orgs/users/roles/tasks/chats/agents/wallets/audit

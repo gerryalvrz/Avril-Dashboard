@@ -30,6 +30,8 @@ export default function WalletsPage() {
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
   const [agentIdentity, setAgentIdentity] = useState<AgentIdentityOnCelo | null>(null);
   const [loadingAgent, setLoadingAgent] = useState(false);
+  const [humanVerified, setHumanVerified] = useState<boolean | null>(null);
+  const [loadingHuman, setLoadingHuman] = useState(false);
 
   const agentUri = process.env.NEXT_PUBLIC_AGENT_REGISTRATION_URI || '';
 
@@ -49,6 +51,30 @@ export default function WalletsPage() {
       })
       .finally(() => {
         if (!cancelled) setLoadingAgent(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  useEffect(() => {
+    if (!address) {
+      setHumanVerified(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingHuman(true);
+    fetch('/api/human/check', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : { ok: false }))
+      .then((data) => {
+        if (!cancelled && data?.ok === true) setHumanVerified(data.verified === true);
+        else if (!cancelled) setHumanVerified(false);
+      })
+      .catch(() => {
+        if (!cancelled) setHumanVerified(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingHuman(false);
       });
     return () => {
       cancelled = true;
@@ -122,8 +148,9 @@ export default function WalletsPage() {
           </ul>
         </div>
 
-        <div className="glass-strong p-6">
-          <h3 className="font-semibold font-heading mb-2">Celo agent identity (ERC-8004)</h3>
+        <div className="space-y-4">
+          <div className="glass-strong p-6">
+            <h3 className="font-semibold font-heading mb-2">Agent ID registration (ERC-8004)</h3>
           <p className="text-xs text-muted mb-3">
             Register this dashboard&apos;s agent identity on Celo using the global ERC-8004 identity registry. This
             uses your connected WaaP wallet on Celo.
@@ -204,6 +231,46 @@ export default function WalletsPage() {
           )}
 
           {status && <p className="mt-3 text-xs text-muted">{status}</p>}
+          </div>
+
+          <div className="glass-strong p-6">
+            <h3 className="font-semibold font-heading mb-2">Human verification (Passport)</h3>
+            <p className="text-xs text-muted mb-3">
+              Verify your wallet with Human Passport to prove humanity. Required for some dashboard features.
+            </p>
+            {!address ? (
+              <p className="text-xs text-muted">Connect a wallet to see verification status.</p>
+            ) : loadingHuman ? (
+              <p className="text-xs text-muted">Checking…</p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                      humanVerified === true
+                        ? 'bg-green-500/10 text-green-400'
+                        : humanVerified === false
+                          ? 'bg-amber-500/10 text-amber-400'
+                          : 'bg-white/10 text-muted'
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        humanVerified === true ? 'bg-green-400' : humanVerified === false ? 'bg-amber-400' : 'bg-muted'
+                      }`}
+                    />
+                    {humanVerified === true ? 'Verified' : humanVerified === false ? 'Not verified' : 'Unknown'}
+                  </span>
+                </div>
+                <a
+                  href="/verify"
+                  className="inline-block text-sm text-accent hover:underline"
+                >
+                  {humanVerified === true ? 'View verification page' : 'Complete verification →'}
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

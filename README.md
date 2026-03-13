@@ -44,6 +44,7 @@ The app can register an onchain agent identity on Celo using the global [ERC-800
    - `NEXT_PUBLIC_APP_URL=https://agents.motusdao.org` (no trailing slash)
    - `NEXT_PUBLIC_AGENT_REGISTRATION_URI=https://agents.motusdao.org/agent-registration.json`
    - `NEXT_PUBLIC_CELO_RPC_URL=https://forno.celo.org` (optional; used when adding Celo in wallet)
+   - **Identity registry contract (Celo mainnet)**: `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`
 
 2. **Register onchain:** Open **Wallets** in the app → use **“Register ERC-8004 identity on Celo”**. Sign the tx with your WaaP wallet (you’ll be switched to Celo if needed).
 
@@ -69,11 +70,11 @@ The app can register an onchain agent identity on Celo using the global [ERC-800
 | Celo tx / contract | [Celoscan](https://celoscan.io) – look up your tx or `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` (IdentityRegistry) |
 | ERC-8004 spec / resources | [eips.ethereum.org/EIPS/eip-8004](https://eips.ethereum.org/EIPS/eip-8004), [8004.org](https://www.8004.org) |
 
-**Submission / evidence (for grants, bounties, or verification)**
+**Celo On-chain Activity**
 
-The dashboard has successfully registered an onchain agent identity on Celo. Use the following as evidence for clear submission:
+The dashboard has successfully registered an onchain agent identity on Celo.
 
-| Evidence | Value |
+| Name | Value |
 |----------|--------|
 | **Chain** | Celo mainnet |
 | **Registry** | [8004: Identity Registry](https://celoscan.io/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432) |
@@ -82,7 +83,6 @@ The dashboard has successfully registered an onchain agent identity on Celo. Use
 | **Agent URI** | `https://agents.motusdao.org/agent-registration.json` |
 | **Domain proof** | `https://agents.motusdao.org/.well-known/agent-registration.json` (after setting `NEXT_PUBLIC_ERC8004_AGENT_ID=1849` and owner in env) |
 
-**Guideline for submission:** When asked to prove ERC-8004 integration, provide (1) the **registration tx link** above, (2) the **agent ID 1849**, and (3) the **agent URI** or **domain proof URL**. The tx shows “Register Agent Identity 1849” with status Success and the ERC-721 transfer from null to the registering wallet.
 
 ## Included baseline
 - Modular architecture scaffold

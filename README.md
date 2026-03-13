@@ -69,6 +69,21 @@ The app can register an onchain agent identity on Celo using the global [ERC-800
 | Celo tx / contract | [Celoscan](https://celoscan.io) – look up your tx or `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` (IdentityRegistry) |
 | ERC-8004 spec / resources | [eips.ethereum.org/EIPS/eip-8004](https://eips.ethereum.org/EIPS/eip-8004), [8004.org](https://www.8004.org) |
 
+**Submission / evidence (for grants, bounties, or verification)**
+
+The dashboard has successfully registered an onchain agent identity on Celo. Use the following as evidence for clear submission:
+
+| Evidence | Value |
+|----------|--------|
+| **Chain** | Celo mainnet |
+| **Registry** | [8004: Identity Registry](https://celoscan.io/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432) |
+| **Agent identity (token ID)** | **1849** |
+| **Registration tx** | [0xc7082bdae53cf295a97af538a5a9df3b86071fb3181b3df5ef0609091c0c19b9](https://celoscan.io/tx/0xc7082bdae53cf295a97af538a5a9df3b86071fb3181b3df5ef0609091c0c19b9) |
+| **Agent URI** | `https://agents.motusdao.org/agent-registration.json` |
+| **Domain proof** | `https://agents.motusdao.org/.well-known/agent-registration.json` (after setting `NEXT_PUBLIC_ERC8004_AGENT_ID=1849` and owner in env) |
+
+**Guideline for submission:** When asked to prove ERC-8004 integration, provide (1) the **registration tx link** above, (2) the **agent ID 1849**, and (3) the **agent URI** or **domain proof URL**. The tx shows “Register Agent Identity 1849” with status Success and the ERC-721 transfer from null to the registering wallet.
+
 ## Included baseline
 - Modular architecture scaffold
 - Convex schema for orgs/users/roles/tasks/chats/agents/wallets/audit

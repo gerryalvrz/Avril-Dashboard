@@ -5,7 +5,20 @@ const CELO_CHAIN_ID_HEX = '0xa4ec'; // 42220
 const identityRegistryAbi = [
   'function register(string agentURI) returns (uint256)',
   'function balanceOf(address owner) view returns (uint256)',
+  'function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)',
 ];
+
+const CELOSCAN_TX = 'https://celoscan.io/tx';
+const CELOSCAN_NFT = 'https://celoscan.io/nft';
+const REGISTRY_ADDRESS_CELOSCAN = 'https://celoscan.io/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432';
+
+export function celoscanTxUrl(txHash: string): string {
+  return `${CELOSCAN_TX}/${txHash}`;
+}
+export function celoscanAgentNftUrl(agentId: number): string {
+  return `${CELOSCAN_NFT}/${IDENTITY_REGISTRY_ADDRESS}/${agentId}`;
+}
+export const CELOSCAN_REGISTRY_URL = REGISTRY_ADDRESS_CELOSCAN;
 
 async function ensureCeloChain() {
   const chainId = (await window.waap?.request?.({ method: 'eth_chainId' as const })) as string | undefined;
@@ -128,5 +141,50 @@ export async function registerAgentIdentityOnCelo(agentURI: string): Promise<str
   })) as string;
 
   return txHash;
+}
+
+export type AgentIdentityOnCelo = { balance: number; agentId: number | null };
+
+/**
+ * Fetches the connected wallet's agent identity on Celo (read-only via Celo RPC).
+ * Use for UX to show "Agent #N" and link to Celoscan.
+ */
+export async function getAgentIdentityOnCelo(ownerAddress: string): Promise<AgentIdentityOnCelo> {
+  const rpcUrl = process.env.NEXT_PUBLIC_CELO_RPC_URL || 'https://forno.celo.org';
+  const { Interface } = await import('ethers');
+  const iface = new Interface(identityRegistryAbi);
+
+  const balanceOfData = iface.encodeFunctionData('balanceOf', [ownerAddress]);
+  const res = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_call',
+      params: [{ to: IDENTITY_REGISTRY_ADDRESS, data: balanceOfData }, 'latest'],
+    }),
+  });
+  const json = (await res.json()) as { result?: string; error?: unknown };
+  if (json.error || json.result === undefined) return { balance: 0, agentId: null };
+  const balance = Number(BigInt(json.result));
+  if (balance === 0) return { balance: 0, agentId: null };
+
+  const tokenOfData = iface.encodeFunctionData('tokenOfOwnerByIndex', [ownerAddress, 0]);
+  const res2 = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'eth_call',
+      params: [{ to: IDENTITY_REGISTRY_ADDRESS, data: tokenOfData }, 'latest'],
+    }),
+  });
+  const json2 = (await res2.json()) as { result?: string; error?: unknown };
+  if (json2.error || json2.result === undefined || json2.result === '0x')
+    return { balance, agentId: null };
+  const agentId = Number(BigInt(json2.result));
+  return { balance, agentId };
 }
 

@@ -1,8 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWaaP } from '@/src/components/WaaPProvider';
-import { registerAgentIdentityOnCelo } from '@/src/lib/celo8004';
+import {
+  registerAgentIdentityOnCelo,
+  getAgentIdentityOnCelo,
+  celoscanTxUrl,
+  celoscanAgentNftUrl,
+  CELOSCAN_REGISTRY_URL,
+  type AgentIdentityOnCelo,
+} from '@/src/lib/celo8004';
 
 const WALLETS = [
   { address: '0x7a3…f12', label: 'Treasury', provider: 'Human.tech', balance: '2.4 CELO', permissions: 'Owner + Admin' },
@@ -20,11 +27,37 @@ export default function WalletsPage() {
   const { address, isAuthenticated, login } = useWaaP();
   const [status, setStatus] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [lastTxHash, setLastTxHash] = useState<string | null>(null);
+  const [agentIdentity, setAgentIdentity] = useState<AgentIdentityOnCelo | null>(null);
+  const [loadingAgent, setLoadingAgent] = useState(false);
 
   const agentUri = process.env.NEXT_PUBLIC_AGENT_REGISTRATION_URI || '';
 
+  useEffect(() => {
+    if (!address) {
+      setAgentIdentity(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingAgent(true);
+    getAgentIdentityOnCelo(address)
+      .then((data) => {
+        if (!cancelled) setAgentIdentity(data);
+      })
+      .catch(() => {
+        if (!cancelled) setAgentIdentity(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingAgent(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
   async function handleRegister() {
     setStatus(null);
+    setLastTxHash(null);
 
     if (!isAuthenticated) {
       await login();
@@ -39,9 +72,15 @@ export default function WalletsPage() {
       setIsRegistering(true);
       setStatus('Preparing ERC-8004 registration on Celo…');
       const txHash = await registerAgentIdentityOnCelo(agentUri);
-      setStatus(`Submitted registration transaction on Celo. Tx hash: ${txHash.slice(0, 10)}…`);
-    } catch (err: any) {
-      setStatus(err?.message || 'Failed to register agent identity on Celo.');
+      setLastTxHash(txHash);
+      setStatus('Registration submitted. View your transaction on Celoscan below.');
+      // Refetch so the new agent ID appears
+      if (address) {
+        const data = await getAgentIdentityOnCelo(address);
+        setAgentIdentity(data);
+      }
+    } catch (err: unknown) {
+      setStatus(err instanceof Error ? err.message : 'Failed to register agent identity on Celo.');
     } finally {
       setIsRegistering(false);
     }
@@ -98,6 +137,56 @@ export default function WalletsPage() {
               </span>
             </div>
           </div>
+
+          {/* Registration status and Celoscan links */}
+          {address && (
+            <div className="mb-4 rounded-lg bg-white/5 border border-white/10 p-3 text-xs">
+              <div className="font-medium text-white/80 mb-1.5">Registration on Celo</div>
+              {loadingAgent ? (
+                <p className="text-muted">Checking…</p>
+              ) : agentIdentity && agentIdentity.balance > 0 ? (
+                <div className="space-y-1.5">
+                  {agentIdentity.agentId != null ? (
+                    <p className="text-muted">
+                      Agent identity <span className="text-white font-medium">#{agentIdentity.agentId}</span>
+                    </p>
+                  ) : (
+                    <p className="text-muted">Registered ({agentIdentity.balance} agent identity)</p>
+                  )}
+                  {agentIdentity.agentId != null && (
+                    <a
+                      href={celoscanAgentNftUrl(agentIdentity.agentId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline block"
+                    >
+                      View agent NFT on Celoscan →
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted">No agent registered on Celo for this wallet.</p>
+              )}
+              {lastTxHash && (
+                <a
+                  href={celoscanTxUrl(lastTxHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline block mt-2"
+                >
+                  View registration tx on Celoscan →
+                </a>
+              )}
+              <a
+                href={CELOSCAN_REGISTRY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline block mt-1"
+              >
+                View registry contract on Celoscan →
+              </a>
+            </div>
+          )}
 
           <button
             type="button"

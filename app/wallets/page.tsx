@@ -64,7 +64,8 @@ export default function WalletsPage() {
     }
     let cancelled = false;
     setLoadingHuman(true);
-    fetch('/api/human/check', { credentials: 'include' })
+    const query = new URLSearchParams({ address });
+    fetch(`/api/human/check?${query.toString()}`, { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : { ok: false }))
       .then((data) => {
         if (!cancelled && data?.ok === true) setHumanVerified(data.verified === true);

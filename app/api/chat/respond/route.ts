@@ -85,7 +85,7 @@ async function callOpenClawBridge(input: BridgeInput): Promise<BridgeResult> {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
     try {
       const res = await fetch(bridgeUrl, {

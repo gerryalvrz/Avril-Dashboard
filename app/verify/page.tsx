@@ -83,7 +83,7 @@ export default function VerifyPage() {
         )}
       </div>
 
-      {canRender ? (
+      {process.env.NODE_ENV === 'development' && canRender ? (
         <div className="glass p-4 rounded-2xl">
           <PassportScoreWidget
             apiKey={apiKey}
@@ -96,7 +96,8 @@ export default function VerifyPage() {
         </div>
       ) : (
         <div className="glass p-6 rounded-2xl text-sm text-muted">
-          Connect a wallet and ensure Passport Embed env vars are set to load the widget.
+          Complete your Passport verification in the external widget or Passport site, then click{" "}
+          <span className="font-semibold text-soft-white">Continue</span>. The server will check your score directly.
         </div>
       )}
 

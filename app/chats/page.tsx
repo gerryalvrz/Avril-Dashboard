@@ -97,6 +97,7 @@ export default function ChatsPage() {
     try {
       const res = await fetch(`/api/chat/state${query}`, {
         cache: 'no-store',
+        headers: { 'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc' },
       });
       if (!res.ok) {
         let text = '';
@@ -163,7 +164,10 @@ export default function ChatsPage() {
   async function handleCreateChat() {
     const res = await fetch('/api/chat/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+      },
       body: JSON.stringify(createChatPayload),
     });
     if (!res.ok) {
@@ -193,7 +197,10 @@ export default function ChatsPage() {
     if (!chatId) {
       const createRes = await fetch('/api/chat/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+        },
         body: JSON.stringify({
           title: 'New Chat',
           area: newChatArea,
@@ -221,7 +228,10 @@ export default function ChatsPage() {
         '/api/chat/respond',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+          },
           body: JSON.stringify({ chatId, message, model }),
         },
         30000

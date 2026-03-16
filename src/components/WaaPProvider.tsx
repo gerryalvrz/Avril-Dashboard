@@ -85,16 +85,28 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
       isReady,
       isAuthenticated,
       login: async () => {
-        await window.waap?.login?.();
-        const accounts = await window.waap?.request?.({ method: 'eth_requestAccounts' });
-        const addr = Array.isArray(accounts) ? String(accounts[0] || '').toLowerCase() : '';
+        try {
+          await window.waap?.login?.();
 
-        if (!addr) {
+          // Try to read accounts from WaaP first; fall back to window.ethereum if needed.
+          let accounts: unknown;
+          try {
+            accounts = await window.waap?.request?.({ method: 'eth_requestAccounts' });
+          } catch {
+            accounts = await (window as any)?.ethereum?.request?.({ method: 'eth_requestAccounts' });
+          }
+
+          const addr = Array.isArray(accounts) ? String(accounts[0] || '').toLowerCase() : '';
+
+          if (!addr) {
+            // If we couldn't read the account here, rely on the WaaP accountsChanged event.
+            return;
+          }
+
+          setAddress(addr);
+        } catch {
           setAddress(null);
-          return;
         }
-
-        setAddress(addr);
       },
       logout: async () => {
         await window.waap?.logout?.();

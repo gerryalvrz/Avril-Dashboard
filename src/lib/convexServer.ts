@@ -137,3 +137,150 @@ export async function listMessages(args: { chatId: string }) {
     serverSecret,
   });
 }
+
+export type OrchestrationSessionStatus = 'queued' | 'spawning' | 'active' | 'failed' | 'completed';
+export type OrchestrationAgentStatus = 'spawning' | 'idle' | 'working' | 'blocked' | 'completed' | 'error';
+
+export async function createOrchestrationSession(args: {
+  organizationId?: string;
+  chatId: string;
+  status?: OrchestrationSessionStatus;
+  spawnRequestId?: string;
+  vpsRef?: string;
+  containerRef?: string;
+  error?: string;
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  const organizationId = args.organizationId ?? (await getDefaultOrganizationId());
+
+  return await (client as any).mutation('serverOrchestration:createSessionServer', {
+    organizationId,
+    chatId: args.chatId,
+    status: args.status,
+    spawnRequestId: args.spawnRequestId,
+    vpsRef: args.vpsRef,
+    containerRef: args.containerRef,
+    error: args.error,
+    serverSecret,
+  });
+}
+
+export async function setOrchestrationSessionStatus(args: {
+  sessionId: string;
+  status: OrchestrationSessionStatus;
+  spawnRequestId?: string;
+  vpsRef?: string;
+  containerRef?: string;
+  error?: string;
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+
+  return await (client as any).mutation('serverOrchestration:setSessionStatusServer', {
+    sessionId: args.sessionId,
+    status: args.status,
+    spawnRequestId: args.spawnRequestId,
+    vpsRef: args.vpsRef,
+    containerRef: args.containerRef,
+    error: args.error,
+    serverSecret,
+  });
+}
+
+export async function appendOrchestrationEvent(args: {
+  sessionId: string;
+  type: string;
+  payload?: unknown;
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).mutation('serverOrchestration:appendSessionEventServer', {
+    sessionId: args.sessionId,
+    type: args.type,
+    payload: args.payload,
+    serverSecret,
+  });
+}
+
+export async function upsertOrchestrationAgents(args: {
+  sessionId: string;
+  agents: Array<{
+    agentKey: string;
+    parentAgentKey?: string;
+    name: string;
+    role?: string;
+    status: OrchestrationAgentStatus;
+    x?: number;
+    y?: number;
+    meta?: unknown;
+  }>;
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).mutation('serverOrchestration:upsertAgentsSnapshotServer', {
+    sessionId: args.sessionId,
+    agents: args.agents,
+    serverSecret,
+  });
+}
+
+export async function updateOrchestrationAgentStatus(args: {
+  sessionId: string;
+  agentKey: string;
+  status: OrchestrationAgentStatus;
+  name?: string;
+  role?: string;
+  parentAgentKey?: string;
+  meta?: unknown;
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).mutation('serverOrchestration:updateAgentStatusServer', {
+    sessionId: args.sessionId,
+    agentKey: args.agentKey,
+    status: args.status,
+    name: args.name,
+    role: args.role,
+    parentAgentKey: args.parentAgentKey,
+    meta: args.meta,
+    serverSecret,
+  });
+}
+
+export async function getOrchestrationSession(args: { sessionId: string }) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).query('serverOrchestration:getSessionServer', {
+    sessionId: args.sessionId,
+    serverSecret,
+  });
+}
+
+export async function getOrchestrationSessionByChat(args: { chatId: string }) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).query('serverOrchestration:getSessionByChatServer', {
+    chatId: args.chatId,
+    serverSecret,
+  });
+}
+
+export async function listOrchestrationAgents(args: { sessionId: string }) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).query('serverOrchestration:listSessionAgentsServer', {
+    sessionId: args.sessionId,
+    serverSecret,
+  });
+}
+
+export async function listOrchestrationEvents(args: { sessionId: string; limit?: number }) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).query('serverOrchestration:listSessionEventsServer', {
+    sessionId: args.sessionId,
+    limit: args.limit,
+    serverSecret,
+  });
+}

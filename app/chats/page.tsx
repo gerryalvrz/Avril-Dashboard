@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
@@ -30,7 +31,7 @@ type Msg = {
   createdAt: string;
 };
 
-type ModelChoice = 'codex' | 'opus';
+type ModelChoice = 'codex' | 'opus' | 'venice';
 
 type ApiErrorPayload = {
   error?: string | { code?: string; message?: string; retryable?: boolean; details?: unknown };
@@ -66,16 +67,19 @@ function extractServerError(payload: ApiErrorPayload | null, fallback = 'Unknown
 
 export default function ChatsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
-  const [model, setModel] = useState<ModelChoice>('codex');
+  const [model, setModel] = useState<ModelChoice>('venice');
   const [streamingText, setStreamingText] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [newChatArea, setNewChatArea] = useState<AgentArea>(DEFAULT_AGENT_AREA);
   const [newChatSubArea, setNewChatSubArea] = useState<AgentSubArea | ''>('');
+  const [launchPrompt, setLaunchPrompt] = useState('');
+  const [launchingOffice, setLaunchingOffice] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -120,7 +124,7 @@ export default function ChatsPage() {
 
   useEffect(() => {
     const savedModel = localStorage.getItem('agentdashboard:model') as ModelChoice | null;
-    if (savedModel === 'codex' || savedModel === 'opus') setModel(savedModel);
+    if (savedModel === 'codex' || savedModel === 'opus' || savedModel === 'venice') setModel(savedModel);
   }, []);
 
   useEffect(() => {
@@ -234,7 +238,7 @@ export default function ChatsPage() {
           },
           body: JSON.stringify({ chatId, message, model }),
         },
-        30000
+        90000
       );
 
       if (!res.ok) {
@@ -284,6 +288,39 @@ export default function ChatsPage() {
       );
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleLaunchOffice() {
+    if (!selectedChatId || launchingOffice) return;
+    const prompt = launchPrompt.trim() || 'Launch agent office for this chat venture.';
+    setLaunchingOffice(true);
+    setStatusMessage('🚀 Launching Agent Office...');
+    try {
+      const res = await fetch('/api/orchestration/spawn', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+        },
+        body: JSON.stringify({ chatId: selectedChatId, prompt }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStatusMessage(`❌ ${data?.error?.message || 'Failed to launch office.'}`);
+        return;
+      }
+      const sessionId = data?.sessionId;
+      if (!sessionId) {
+        setStatusMessage('❌ Missing sessionId from spawn response.');
+        return;
+      }
+      setStatusMessage('✅ Agent Office launched.');
+      router.push(`/agents/office?sessionId=${encodeURIComponent(sessionId)}`);
+    } catch (err) {
+      setStatusMessage(err instanceof Error ? `❌ ${err.message}` : '❌ Failed to launch office.');
+    } finally {
+      setLaunchingOffice(false);
     }
   }
 
@@ -375,13 +412,28 @@ export default function ChatsPage() {
             )}
             {statusMessage && <p className="text-[11px] text-yellow-300 mt-1 truncate">{statusMessage}</p>}
           </div>
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs flex-wrap justify-end">
+            <input
+              type="text"
+              value={launchPrompt}
+              onChange={(e) => setLaunchPrompt(e.target.value)}
+              placeholder="Office launch prompt (optional)"
+              className="bg-surface border border-border rounded-lg px-2 py-1 text-gray-200 w-64 max-w-full"
+            />
+            <button
+              onClick={() => void handleLaunchOffice()}
+              disabled={!selectedChatId || launchingOffice}
+              className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50"
+            >
+              {launchingOffice ? 'Launching…' : 'Launch Agent Office'}
+            </button>
             <span className="text-muted">Model:</span>
             <select
               value={model}
               onChange={(e) => setModel(e.target.value as ModelChoice)}
               className="bg-surface border border-border rounded-lg px-2 py-1 text-gray-200"
             >
+              <option value="venice">Venice</option>
               <option value="codex">Codex</option>
               <option value="opus">Opus</option>
             </select>

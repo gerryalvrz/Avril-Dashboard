@@ -15,7 +15,7 @@ type RequestBody = {
   chatId: string;
   message: string;
   organizationId?: string;
-  model?: 'codex' | 'opus';
+  model?: 'codex' | 'opus' | 'venice';
 };
 
 type ApiErrorCode =
@@ -28,6 +28,8 @@ type ApiErrorCode =
   | 'CONVEX_ERROR'
   | 'BRIDGE_TIMEOUT'
   | 'BRIDGE_ERROR'
+  | 'VENICE_TIMEOUT'
+  | 'VENICE_ERROR'
   | 'INTERNAL_ERROR';
 
 type BridgeResult =
@@ -57,7 +59,7 @@ function errorResponse(
 type BridgeInput = {
   chatId: string;
   message: string;
-  model?: 'codex' | 'opus';
+  model?: 'codex' | 'opus' | 'venice';
   agentId?: string;
   area?: string;
   subArea?: string;
@@ -65,6 +67,104 @@ type BridgeInput = {
   messages?: Array<{ authorType: string; authorId: string; content: string; createdAt: string }>;
   maxContextChars?: number;
 };
+
+type VeniceResult =
+  | { ok: true; text: string }
+  | { ok: false; code: 'VENICE_TIMEOUT' | 'VENICE_ERROR'; message: string; retryable: boolean };
+
+function buildVeniceMessages(input: BridgeInput): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+  const systemParts = [
+    'You are AgentMotus, an autonomous assistant for AgentDashboard.',
+    input.area ? `Primary area: ${input.area}.` : null,
+    input.subArea ? `Sub-area: ${input.subArea}.` : null,
+  ].filter(Boolean);
+
+  const fromContext =
+    input.messages?.map((msg) => ({
+      role: msg.authorType === 'agent' ? ('assistant' as const) : ('user' as const),
+      content: String(msg.content ?? ''),
+    })) ?? [];
+
+  return [
+    { role: 'system', content: systemParts.join(' ') },
+    ...(input.summary ? [{ role: 'system' as const, content: `Conversation summary: ${input.summary}` }] : []),
+    ...fromContext,
+    { role: 'user', content: input.message },
+  ];
+}
+
+async function callVeniceInference(input: BridgeInput): Promise<VeniceResult> {
+  const veniceKey = process.env.VENICE_INFERENCE_KEY;
+  const veniceUrl = process.env.VENICE_INFERENCE_URL || 'https://api.venice.ai/api/v1/chat/completions';
+  const veniceModel = process.env.VENICE_MODEL || 'venice-uncensored';
+
+  if (!veniceKey) {
+    return {
+      ok: false,
+      code: 'VENICE_ERROR',
+      message: 'Venice is not configured. Missing VENICE_INFERENCE_KEY.',
+      retryable: false,
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch(veniceUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${veniceKey}`,
+      },
+      body: JSON.stringify({
+        model: veniceModel,
+        messages: buildVeniceMessages(input),
+        temperature: 0.6,
+      }),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => '');
+      return {
+        ok: false,
+        code: 'VENICE_ERROR',
+        message: `Venice responded with ${res.status}${bodyText ? `: ${bodyText.slice(0, 180)}` : ''}`,
+        retryable: res.status >= 500,
+      };
+    }
+
+    const data: any = await res.json().catch(() => null);
+    const text =
+      data?.choices?.[0]?.message?.content ??
+      data?.reply ??
+      data?.text ??
+      data?.message ??
+      '';
+
+    if (typeof text === 'string' && text.trim().length > 0) {
+      return { ok: true, text: text.trim() };
+    }
+
+    return {
+      ok: false,
+      code: 'VENICE_ERROR',
+      message: 'Venice returned no reply text.',
+      retryable: true,
+    };
+  } catch (err) {
+    const isAbort = err instanceof Error && err.name === 'AbortError';
+    return {
+      ok: false,
+      code: isAbort ? 'VENICE_TIMEOUT' : 'VENICE_ERROR',
+      message: isAbort ? 'Venice request timed out after 60s.' : err instanceof Error ? err.message : 'Venice request failed.',
+      retryable: true,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 async function callOpenClawBridge(input: BridgeInput): Promise<BridgeResult> {
   const bridgeUrl = process.env.OPENCLAW_BRIDGE_URL;
@@ -264,7 +364,7 @@ export async function POST(req: Request) {
       // Proceed without context if listing fails
     }
 
-    const bridge = await callOpenClawBridge({
+    const input: BridgeInput = {
       chatId,
       message,
       model: body.model,
@@ -274,17 +374,20 @@ export async function POST(req: Request) {
       ...(hasSummary && currentChat?.summary && { summary: currentChat.summary.trim() }),
       messages: contextMessages.length > 0 ? contextMessages : undefined,
       maxContextChars: BRIDGE_CONTEXT_MAX_CHARS,
-    });
+    };
 
-    if (!bridge.ok) {
-      return errorResponse(502, bridge.code, bridge.message, {
-        retryable: bridge.retryable,
-        details: { attempts: bridge.attempts },
+    const result =
+      body.model === 'venice' ? await callVeniceInference(input) : await callOpenClawBridge(input);
+
+    if (!result.ok) {
+      return errorResponse(502, result.code, result.message, {
+        retryable: result.retryable,
+        details: 'attempts' in result ? { attempts: result.attempts } : undefined,
       });
     }
 
     try {
-      await sendAgentMessage({ chatId, content: bridge.text, authorId: 'AgentMotus' });
+      await sendAgentMessage({ chatId, content: result.text, authorId: 'AgentMotus' });
     } catch (err) {
       return errorResponse(502, 'CONVEX_ERROR', 'Agent reply received but failed to persist.', {
         retryable: true,
@@ -292,7 +395,7 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ ok: true, reply: bridge.text });
+    return NextResponse.json({ ok: true, reply: result.text });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown server error';
     return errorResponse(500, 'INTERNAL_ERROR', message, { retryable: true });

@@ -2,14 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useWaaP } from '@/src/components/WaaPProvider';
-import {
-  registerAgentIdentityOnCelo,
-  getAgentIdentityOnCelo,
-  celoscanTxUrl,
-  celoscanAgentNftUrl,
-  CELOSCAN_REGISTRY_URL,
-  type AgentIdentityOnCelo,
-} from '@/src/lib/celo8004';
 
 const WALLETS = [
   { address: '0x7a3…f12', label: 'Treasury', provider: 'Human.tech', balance: '2.4 CELO', permissions: 'Owner + Admin' },
@@ -24,38 +16,9 @@ const ACTIVITY = [
 ];
 
 export default function WalletsPage() {
-  const { address, isAuthenticated, login } = useWaaP();
-  const [status, setStatus] = useState<string | null>(null);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [lastTxHash, setLastTxHash] = useState<string | null>(null);
-  const [agentIdentity, setAgentIdentity] = useState<AgentIdentityOnCelo | null>(null);
-  const [loadingAgent, setLoadingAgent] = useState(false);
+  const { address } = useWaaP();
   const [humanVerified, setHumanVerified] = useState<boolean | null>(null);
   const [loadingHuman, setLoadingHuman] = useState(false);
-
-  const agentUri = process.env.NEXT_PUBLIC_AGENT_REGISTRATION_URI || '';
-
-  useEffect(() => {
-    if (!address) {
-      setAgentIdentity(null);
-      return;
-    }
-    let cancelled = false;
-    setLoadingAgent(true);
-    getAgentIdentityOnCelo(address)
-      .then((data) => {
-        if (!cancelled) setAgentIdentity(data);
-      })
-      .catch(() => {
-        if (!cancelled) setAgentIdentity(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingAgent(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [address]);
 
   useEffect(() => {
     if (!address) {
@@ -81,37 +44,6 @@ export default function WalletsPage() {
       cancelled = true;
     };
   }, [address]);
-
-  async function handleRegister() {
-    setStatus(null);
-    setLastTxHash(null);
-
-    if (!isAuthenticated) {
-      await login();
-    }
-
-    if (!agentUri) {
-      setStatus('Agent registration URI is not configured. Set NEXT_PUBLIC_AGENT_REGISTRATION_URI in .env.local.');
-      return;
-    }
-
-    try {
-      setIsRegistering(true);
-      setStatus('Preparing ERC-8004 registration on Celo…');
-      const txHash = await registerAgentIdentityOnCelo(agentUri);
-      setLastTxHash(txHash);
-      setStatus('Registration submitted. View your transaction on Celoscan below.');
-      // Refetch so the new agent ID appears
-      if (address) {
-        const data = await getAgentIdentityOnCelo(address);
-        setAgentIdentity(data);
-      }
-    } catch (err: unknown) {
-      setStatus(err instanceof Error ? err.message : 'Failed to register agent identity on Celo.');
-    } finally {
-      setIsRegistering(false);
-    }
-  }
 
   return (
     <div className="font-sans space-y-8">
@@ -150,90 +82,6 @@ export default function WalletsPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="glass-strong p-6">
-            <h3 className="font-semibold font-heading mb-2">Agent ID registration (ERC-8004)</h3>
-          <p className="text-xs text-muted mb-3">
-            Register this dashboard&apos;s agent identity on Celo using the global ERC-8004 identity registry. This
-            uses your connected WaaP wallet on Celo.
-          </p>
-
-          <div className="mb-3 text-xs text-muted">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-white/80">Connected address</span>
-              <span className="font-mono">
-                {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : 'Not connected'}
-              </span>
-            </div>
-          </div>
-
-          {/* Registration status and Celoscan links */}
-          {address && (
-            <div className="mb-4 rounded-lg bg-white/5 border border-white/10 p-3 text-xs">
-              <div className="font-medium text-white/80 mb-1.5">Registration on Celo</div>
-              {loadingAgent ? (
-                <p className="text-muted">Checking…</p>
-              ) : agentIdentity && agentIdentity.balance > 0 ? (
-                <div className="space-y-1.5">
-                  {agentIdentity.agentId != null ? (
-                    <p className="text-muted">
-                      Agent identity <span className="text-white font-medium">#{agentIdentity.agentId}</span>
-                    </p>
-                  ) : (
-                    <p className="text-muted">Registered ({agentIdentity.balance} agent identity)</p>
-                  )}
-                  {agentIdentity.agentId != null && (
-                    <a
-                      href={celoscanAgentNftUrl(agentIdentity.agentId)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent hover:underline block"
-                    >
-                      View agent NFT on Celoscan →
-                    </a>
-                  )}
-                </div>
-              ) : (
-                <p className="text-muted">No agent registered on Celo for this wallet.</p>
-              )}
-              {lastTxHash && (
-                <a
-                  href={celoscanTxUrl(lastTxHash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent hover:underline block mt-2"
-                >
-                  View registration tx on Celoscan →
-                </a>
-              )}
-              <a
-                href={CELOSCAN_REGISTRY_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline block mt-1"
-              >
-                View registry contract on Celoscan →
-              </a>
-            </div>
-          )}
-
-          <button
-            type="button"
-            className="btn-primary w-full text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleRegister}
-            disabled={isRegistering}
-          >
-            {isRegistering ? 'Registering on Celo…' : 'Register ERC-8004 identity on Celo'}
-          </button>
-
-          {agentUri && (
-            <p className="mt-3 text-[11px] text-muted break-all">
-              Using registration URI: <span className="text-white/80">{agentUri}</span>
-            </p>
-          )}
-
-          {status && <p className="mt-3 text-xs text-muted">{status}</p>}
-          </div>
-
           <div className="glass-strong p-6">
             <h3 className="font-semibold font-heading mb-2">Human verification (Passport)</h3>
             <p className="text-xs text-muted mb-3">

@@ -3,6 +3,8 @@ import './globals.css';
 import Shell from '@/src/components/Shell';
 import ConvexClientProvider from '@/src/components/ConvexClientProvider';
 import WaaPProvider from '@/src/components/WaaPProvider';
+import { UIStoreProvider } from '@/src/lib/store';
+import ThemeProvider from '@/src/components/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'AgentDashboard',
@@ -11,12 +13,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <WaaPProvider>
-          <ConvexClientProvider>
-            <Shell>{children}</Shell>
-          </ConvexClientProvider>
+          <UIStoreProvider>
+            <ThemeProvider>
+              <ConvexClientProvider>
+                <Shell>{children}</Shell>
+              </ConvexClientProvider>
+            </ThemeProvider>
+          </UIStoreProvider>
         </WaaPProvider>
       </body>
     </html>

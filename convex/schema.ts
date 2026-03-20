@@ -15,6 +15,53 @@ export default defineSchema({
     area: v.optional(areaValidator),
     subArea: subAreaValidator,
   }).index('by_org', ['organizationId']).index('by_chat', ['chatId']).index('by_org_area', ['organizationId', 'area']),
+  orchestrationSessions: defineTable({
+    organizationId: v.id('organizations'),
+    chatId: v.id('chats'),
+    status: v.union(
+      v.literal('queued'),
+      v.literal('spawning'),
+      v.literal('active'),
+      v.literal('failed'),
+      v.literal('completed')
+    ),
+    spawnRequestId: v.optional(v.string()),
+    vpsRef: v.optional(v.string()),
+    containerRef: v.optional(v.string()),
+    error: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index('by_chat', ['chatId'])
+    .index('by_org_updatedAt', ['organizationId', 'updatedAt']),
+  orchestrationAgents: defineTable({
+    sessionId: v.id('orchestrationSessions'),
+    agentKey: v.string(),
+    parentAgentKey: v.optional(v.string()),
+    name: v.string(),
+    role: v.optional(v.string()),
+    status: v.union(
+      v.literal('spawning'),
+      v.literal('idle'),
+      v.literal('working'),
+      v.literal('blocked'),
+      v.literal('completed'),
+      v.literal('error')
+    ),
+    x: v.optional(v.number()),
+    y: v.optional(v.number()),
+    meta: v.optional(v.any()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index('by_session', ['sessionId'])
+    .index('by_session_agentKey', ['sessionId', 'agentKey']),
+  orchestrationEvents: defineTable({
+    sessionId: v.id('orchestrationSessions'),
+    type: v.string(),
+    payload: v.optional(v.any()),
+    createdAt: v.string(),
+  }).index('by_session', ['sessionId']),
   agentRuns: defineTable({ organizationId: v.id('organizations'), agentId: v.id('agents'), taskId: v.optional(v.id('tasks')), status: v.union(v.literal('queued'), v.literal('running'), v.literal('success'), v.literal('failed')), createdAt: v.string() }).index('by_agent', ['agentId']),
   tasks: defineTable({ organizationId: v.id('organizations'), title: v.string(), status: v.union(v.literal('todo'), v.literal('in_progress'), v.literal('done')), priority: v.union(v.literal('low'), v.literal('medium'), v.literal('high')), assigneeAgentId: v.optional(v.id('agents')), createdAt: v.string() }).index('by_org_status', ['organizationId', 'status']),
   taskEvents: defineTable({ taskId: v.id('tasks'), type: v.string(), payload: v.optional(v.any()), createdAt: v.string() }).index('by_task', ['taskId']),

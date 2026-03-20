@@ -2,6 +2,15 @@
 
 Control plane for Motus multi-agent operations.
 
+## MotusNS Deployment (Celo Mainnet)
+
+| Name | Value |
+|------|------|
+| **Network** | Celo mainnet (`chainId: 42220`) |
+| **MotusNSRegistry** | [0xb1582d5E49D695C40946656a679a05f5B69aF57c](https://celoscan.io/address/0xb1582d5E49D695C40946656a679a05f5B69aF57c) |
+| **Root label** | `motusns.eth` |
+| **rootNode** | `0xa0066238618987b274e0fdbafdbcdc96244246c247226e150a3c6e564cc5b621` |
+
 ## Stack
 - Next.js + TypeScript
 - Convex (database/runtime)

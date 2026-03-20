@@ -1,8 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Jura:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Share+Tech+Mono:wght@400&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-/* ========== Design tokens (MotusDAO Hub) ========== */
+/* ========== Design tokens & themes (MotusDAO Hub compatible) ========== */
 :root {
+  /* Base design tokens */
   --primary-black: #1a1a1a;
   --primary-blue: #6366f1;
   --primary-gray: #6b7280;
@@ -11,33 +12,47 @@
   --pastel-cyan: #ecfeff;
   --soft-white: #fafafa;
 
+  /* Gradient definitions */
   --grad-primary: linear-gradient(to right, #9333ea, #ec4899);
   --grad-secondary: linear-gradient(to right, #3b82f6, #06b6d4);
   --grad-background: radial-gradient(60% 60% at 20% 20%, rgba(59,130,246,.18), transparent 60%),
-    radial-gradient(60% 60% at 80% 30%, rgba(236,72,153,.16), transparent 60%),
-    radial-gradient(70% 70% at 50% 80%, rgba(168,85,247,.18), transparent 60%),
-    linear-gradient(45deg, rgba(59,130,246,.08) 0%, rgba(236,72,153,.08) 50%, rgba(168,85,247,.10) 100%);
+                     radial-gradient(60% 60% at 80% 30%, rgba(236,72,153,.16), transparent 60%),
+                     radial-gradient(70% 70% at 50% 80%, rgba(168,85,247,.18), transparent 60%),
+                     linear-gradient(45deg, rgba(59,130,246,.08) 0%, rgba(236,72,153,.08) 50%, rgba(168,85,247,.10) 100%);
+
+  /* Light theme tokens */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 3.9%;
+  --border: 0 0% 89.8%;
+  --ring: 262.1 83.3% 57.8%;
 }
 
-/* Dark theme (default app experience) */
-.dark,
-:root {
+.dark {
+  /* Dark theme - pure black background */
   --background: 0 0% 0%;
   --foreground: 0 0% 98%;
   --card: 0 0% 0%;
+  --card-foreground: 0 0% 98%;
   --border: 0 0% 14.9%;
-  --primary: 262.1 83.3% 57.8%;
   --ring: 262.1 83.3% 57.8%;
-  --radius: 0.5rem;
 }
 
-/* Matrix theme (optional) */
+/* Matrix theme (full MotusDAO Hub mapping) */
 [data-theme="matrix"] {
   --matrix-bg: #000000;
   --matrix-text: #39ff14;
   --matrix-accent: #00ff41;
   --matrix-border: rgba(0,255,65,0.6);
   --matrix-placeholder: #32ff32;
+
+  --background: 0 0% 0%;
+  --foreground: 120 100% 50%;
+  --card: 0 0% 0%;
+  --card-foreground: 120 100% 50%;
+  --border: 120 100% 50%;
+  --ring: 120 100% 50%;
 }
 
 /* Tailwind theme extension */
@@ -89,6 +104,36 @@ body {
   animation: gradientShift 8s ease-in-out infinite;
 }
 
+/* Matrix gradients on body (subset of motusdao-hub for effect parity) */
+[data-theme="matrix"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(60% 60% at 20% 20%, rgba(0,255,65,.15), transparent 60%),
+    radial-gradient(60% 60% at 80% 30%, rgba(57,255,20,.12), transparent 60%),
+    radial-gradient(70% 70% at 50% 80%, rgba(50,255,50,.18), transparent 60%),
+    linear-gradient(45deg, rgba(0,255,65,.08) 0%, rgba(57,255,20,.08) 50%, rgba(50,255,50,.10) 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+[data-theme="matrix"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(0,255,65, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(57,255,20, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(50,255,50, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0,255,65, 0.08) 0%, transparent 50%);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 @keyframes gradientShift {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.85; }
@@ -134,6 +179,17 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0 0 1rem 1rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.06);
+}
+
+/* Matrix override for glass surfaces */
+[data-theme="matrix"] .glass,
+[data-theme="matrix"] .glass-strong,
+[data-theme="matrix"] .glass-navbar,
+[data-theme="matrix"] .glass-sidebar {
+  background: rgba(0, 0, 0, 0.9) !important;
+  border: 1px solid var(--matrix-border) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,255,65,0.15);
 }
 
 /* ========== Buttons ========== */
@@ -226,6 +282,19 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   font-family: var(--font-heading);
+}
+
+/* Matrix theme typography tweaks for small labels (e.g. theme toggle) */
+.matrix-toggle-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-theme="matrix"] .matrix-toggle-label {
+  font-family: var(--font-matrix);
+  color: var(--matrix-text);
 }
 
 .modern-typography-medium {

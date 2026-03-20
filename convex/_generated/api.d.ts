@@ -14,6 +14,7 @@ import type * as crons from "../crons.js";
 import type * as lib_agentAreas from "../lib/agentAreas.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as serverChats from "../serverChats.js";
+import type * as serverOrchestration from "../serverOrchestration.js";
 import type * as summarize from "../summarize.js";
 
 import type {
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   "lib/agentAreas": typeof lib_agentAreas;
   "lib/authz": typeof lib_authz;
   serverChats: typeof serverChats;
+  serverOrchestration: typeof serverOrchestration;
   summarize: typeof summarize;
 }>;
 

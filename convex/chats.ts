@@ -131,7 +131,7 @@ export const sendAgentMessage = mutation({
     const messageId = await ctx.db.insert('messages', {
       chatId: args.chatId,
       authorType: 'agent',
-      authorId: args.authorId?.trim() || 'AgentMotus',
+      authorId: args.authorId?.trim() || 'AvrilAgent',
       content: args.content,
       createdAt: now,
     });

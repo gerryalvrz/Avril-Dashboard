@@ -1,13 +1,15 @@
- 'use client';
+'use client';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { Menu } from 'lucide-react';
 import { useWaaP } from './WaaPProvider';
 import ThemePillarToggle from './ThemePillarToggle';
 
 const TITLES: Record<string, string> = {
-  '/home': 'Home',
+  '/home': 'Menu',
   '/verify': 'Verification',
   '/agents': 'Agents',
+  '/agents/office': 'Agent Office',
   '/tasks': 'Tasks',
   '/chats': 'Chats',
   '/wallets': 'Wallets',
@@ -15,12 +17,17 @@ const TITLES: Record<string, string> = {
 };
 
 type TopbarProps = {
-  onOpenMenu: () => void;
+  menuOpen: boolean;
+  onMenuToggle: () => void;
 };
 
-export default function Topbar({ onOpenMenu }: TopbarProps) {
+export default function Topbar({ menuOpen, onMenuToggle }: TopbarProps) {
   const pathname = usePathname();
-  const title = TITLES[pathname] ?? 'AgentDashboard';
+  const title =
+    TITLES[pathname] ??
+    (pathname.startsWith('/agents/office') ? 'Agent Office' : undefined) ??
+    (pathname.startsWith('/agents') ? 'Agents' : undefined) ??
+    'Avril Dashboard';
   const { address, logout } = useWaaP();
   const [copied, setCopied] = useState(false);
 
@@ -36,14 +43,17 @@ export default function Topbar({ onOpenMenu }: TopbarProps) {
   };
 
   return (
-    <header className="fixed top-0 left-0 md:left-64 right-0 h-16 glass-navbar flex items-center justify-between px-4 md:px-6 z-20">
+    <header className="fixed top-0 left-0 right-0 h-16 glass-navbar flex items-center justify-between px-4 md:px-6 z-[60]">
       <div className="flex items-center gap-3">
         <button
-          onClick={onOpenMenu}
-          aria-label="Open menu"
-          className="md:hidden text-lg text-muted hover:text-white smooth-transition"
+          type="button"
+          onClick={onMenuToggle}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          aria-controls="nav-drawer"
+          className="p-2 rounded-lg text-muted hover:text-white hover:bg-white/10 smooth-transition border border-white/10"
         >
-          ☰
+          <Menu className="w-5 h-5" strokeWidth={2} aria-hidden />
         </button>
         <h1 className="text-base font-semibold text-white font-heading">{title}</h1>
       </div>
@@ -51,7 +61,7 @@ export default function Topbar({ onOpenMenu }: TopbarProps) {
       <div className="flex items-center gap-3 md:gap-4">
         <ThemePillarToggle />
         <span className="text-xs text-muted hidden sm:inline">
-          {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Motus-DAO'}
+          {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Avril'}
         </span>
         {address && (
           <button onClick={() => void handleCopy()} className="btn-ghost text-xs">

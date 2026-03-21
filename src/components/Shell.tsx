@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Sidebar from './Sidebar';
+import NavDrawer from './Sidebar';
 import Topbar from './Topbar';
 import { useWaaP } from './WaaPProvider';
 
 export default function Shell({ children }: { children: React.ReactNode }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { isReady, isAuthenticated, login, address } = useWaaP();
   const router = useRouter();
   const hasRedirectedRef = useRef(false);
@@ -27,7 +27,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     return (
       <main className="min-h-screen grid place-items-center p-6">
         <div className="w-full max-w-md glass p-8 text-center">
-          <h1 className="modern-typography-medium gradient-text mb-2">AgentDashboard</h1>
+          <h1 className="modern-typography-medium gradient-text mb-2">Avril Dashboard</h1>
           <p className="text-sm text-muted mb-4">Login with Human.tech (WaaP).</p>
           {address && (
             <p className="text-xs text-muted mb-3 font-mono break-all">
@@ -44,9 +44,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <Topbar onOpenMenu={() => setMobileOpen(true)} />
-      <main className="flex-1 pt-16 md:pt-20 md:ml-64 p-4 md:p-6 min-h-screen max-w-full">{children}</main>
+      <NavDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Topbar menuOpen={menuOpen} onMenuToggle={() => setMenuOpen((v) => !v)} />
+      <main className="flex-1 pt-16 md:pt-20 p-4 md:p-6 min-h-screen max-w-full">{children}</main>
     </>
   );
 }

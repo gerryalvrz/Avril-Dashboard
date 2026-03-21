@@ -14,8 +14,8 @@ type UIStoreState = {
 
 const UIStoreContext = createContext<UIStoreState | undefined>(undefined);
 
-const THEME_KEY = 'agentdashboard:theme';
-const MATRIX_COLOR_KEY = 'agentdashboard:matrix-color';
+const THEME_KEY = 'avril-dashboard:theme';
+const MATRIX_COLOR_KEY = 'avril-dashboard:matrix-color';
 
 function applyThemeToDocument(theme: ThemeMode, matrixColor: MatrixColor) {
   if (typeof document === 'undefined') return;

@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Jura:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Share+Tech+Mono:wght@400&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-/* ========== Design tokens & themes (MotusDAO Hub compatible) ========== */
+/* ========== Design tokens & themes (Avril Dashboard) ========== */
 :root {
   /* Base design tokens */
   --primary-black: #1a1a1a;
@@ -20,13 +20,21 @@
                      radial-gradient(70% 70% at 50% 80%, rgba(168,85,247,.18), transparent 60%),
                      linear-gradient(45deg, rgba(59,130,246,.08) 0%, rgba(236,72,153,.08) 50%, rgba(168,85,247,.10) 100%);
 
-  /* Light theme tokens */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 3.9%;
-  --border: 0 0% 89.8%;
+  /* Base theme tokens (all-black background) */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 98%;
+  --border: 0 0% 14.9%;
   --ring: 262.1 83.3% 57.8%;
+  --radius: 0.625rem;
+
+  /* AgentsLanding-inspired semantic tokens */
+  --brand: oklch(0.62 0.14 210);
+  --brand-dim: oklch(0.52 0.1 210);
+  --surface: oklch(0.14 0 0);
+  --surface-raised: oklch(0.17 0 0);
+  --surface-overlay: oklch(0.19 0 0);
 }
 
 .dark {
@@ -37,9 +45,14 @@
   --card-foreground: 0 0% 98%;
   --border: 0 0% 14.9%;
   --ring: 262.1 83.3% 57.8%;
+  --brand: oklch(0.62 0.14 210);
+  --brand-dim: oklch(0.52 0.1 210);
+  --surface: oklch(0.14 0 0);
+  --surface-raised: oklch(0.17 0 0);
+  --surface-overlay: oklch(0.19 0 0);
 }
 
-/* Matrix theme (full MotusDAO Hub mapping) */
+/* Matrix theme (legacy compatibility mode) */
 [data-theme="matrix"] {
   --matrix-bg: #000000;
   --matrix-text: #39ff14;
@@ -68,6 +81,11 @@
   --color-primary-blue: var(--primary-blue);
   --color-primary-gray: var(--primary-gray);
   --color-soft-white: var(--soft-white);
+  --color-brand: var(--brand);
+  --color-brand-dim: var(--brand-dim);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
 
   /* Fonts */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -95,43 +113,16 @@ body {
 }
 
 .dark body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: var(--grad-background);
-  pointer-events: none;
-  z-index: -1;
-  animation: gradientShift 8s ease-in-out infinite;
+  content: none;
 }
 
-/* Matrix gradients on body (subset of motusdao-hub for effect parity) */
+/* Matrix gradients on body (legacy compatibility mode) */
 [data-theme="matrix"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(60% 60% at 20% 20%, rgba(0,255,65,.15), transparent 60%),
-    radial-gradient(60% 60% at 80% 30%, rgba(57,255,20,.12), transparent 60%),
-    radial-gradient(70% 70% at 50% 80%, rgba(50,255,50,.18), transparent 60%),
-    linear-gradient(45deg, rgba(0,255,65,.08) 0%, rgba(57,255,20,.08) 50%, rgba(50,255,50,.10) 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease-in-out infinite;
-  z-index: -1;
-  pointer-events: none;
+  content: none;
 }
 
 [data-theme="matrix"] body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(0,255,65, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(57,255,20, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 40% 80%, rgba(50,255,50, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(0,255,65, 0.08) 0%, transparent 50%);
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.6;
+  content: none;
 }
 
 @keyframes gradientShift {
@@ -143,25 +134,19 @@ body {
 .glass {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%),
-    radial-gradient(circle at 30% 30%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 20px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .glass-strong {
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%),
-    radial-gradient(circle at 30% 30%, rgba(147, 51, 234, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 255, 255, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
 .glass-sidebar {
@@ -175,10 +160,22 @@ body {
 .glass-navbar {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0 0 1rem 1rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+/* Hamburger nav modal — transparent glass (avoids Tailwind arbitrary shadow / saturate quirks) */
+.glass-nav-modal {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1rem;
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 /* Matrix override for glass surfaces */
@@ -190,6 +187,13 @@ body {
   border: 1px solid var(--matrix-border) !important;
   border-radius: 0 !important;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,255,65,0.15);
+}
+
+[data-theme="matrix"] .glass-nav-modal {
+  background: rgba(0, 0, 0, 0.88) !important;
+  border: 1px solid var(--matrix-border) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 65, 0.12);
 }
 
 /* ========== Buttons ========== */
@@ -256,6 +260,56 @@ body {
 
 .btn-ghost:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* ========== Design system primitives ========== */
+.ds-card {
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: color-mix(in oklab, var(--surface-raised) 88%, transparent);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+}
+
+.ds-card-muted {
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+}
+
+.ds-heading {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
+}
+
+.ds-kicker {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in oklab, white 58%, transparent);
+}
+
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.ds-badge-brand {
+  background: color-mix(in oklab, var(--brand) 20%, transparent);
+  color: color-mix(in oklab, white 90%, var(--brand) 10%);
+  border-color: color-mix(in oklab, var(--brand) 55%, transparent);
+}
+
+[data-theme="matrix"] .ds-card,
+[data-theme="matrix"] .ds-card-muted {
+  border-radius: 0;
+  border-color: var(--matrix-border);
 }
 
 /* ========== Gradient text ========== */
@@ -397,4 +451,11 @@ a:focus-visible {
 .chat-markdown a {
   color: #93c5fd;
   text-decoration: underline;
+}
+
+.lab-bg::before {
+  overflow: hidden;
+  max-width: 100vw;
+  max-height: 100vh;
+  box-sizing: border-box;
 }

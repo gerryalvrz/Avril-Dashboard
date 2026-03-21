@@ -16,7 +16,7 @@ type Body = {
 };
 
 function authMessage(nonce: string) {
-  return `AgentDashboard auth nonce: ${nonce}`;
+  return `Avril Dashboard auth nonce: ${nonce}`;
 }
 
 export async function POST(req: Request) {

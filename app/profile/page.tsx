@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useWaaP } from '@/src/components/WaaPProvider';
 import ThemeToggle from '@/src/components/ThemeToggle';
 import MatrixColorSelector from '@/src/components/MatrixColorSelector';
+import Card from '@/src/components/ui/Card';
+import SectionTitle from '@/src/components/ui/SectionTitle';
 
 export default function ProfilePage() {
   const { address } = useWaaP();
@@ -13,20 +15,17 @@ export default function ProfilePage() {
   return (
     <div className="font-sans space-y-8">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="modern-typography-medium gradient-text">Profile</h2>
-          <p className="text-sm text-muted mt-1">Configura tu experiencia visual de MotusDAO Hub y revisa tu identidad.</p>
-        </div>
+        <SectionTitle title="Profile" subtitle="Configure your Avril experience and identity settings." />
         <div className="hidden md:block">
           <ThemeToggle />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        <div className="glass-strong p-6 space-y-6 lg:col-span-2">
+        <Card className="p-6 space-y-6 lg:col-span-2">
           <h3 className="font-semibold font-heading mb-1">User</h3>
           <p className="text-sm text-muted">
-            This is your MotusDAO Hub identity inside the AgentDashboard. We&apos;ll aggregate your agents, chats and
+            This is your Avril Dashboard identity. We&apos;ll aggregate your agents, chats and
             on-chain footprint here.
           </p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -47,9 +46,9 @@ export default function ProfilePage() {
           <div className="pt-4 border-t border-white/10">
             <MatrixColorSelector />
           </div>
-        </div>
+        </Card>
 
-        <div className="glass p-6 space-y-3">
+        <Card className="p-6 space-y-3">
           <h3 className="font-semibold font-heading mb-1">Quick links</h3>
           <ul className="space-y-2 text-sm text-muted">
             <li>
@@ -73,10 +72,10 @@ export default function ProfilePage() {
               </Link>
             </li>
           </ul>
-        </div>
+        </Card>
       </div>
 
-      <div className="glass p-6">
+      <Card className="p-6">
         <h3 className="font-semibold font-heading mb-3">Activity overview</h3>
         <p className="text-sm text-muted mb-3">
           Soon this section will show a unified stream of your agent runs, important events and audit logs. For now,
@@ -96,7 +95,7 @@ export default function ProfilePage() {
             Wallets
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

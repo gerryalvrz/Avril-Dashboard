@@ -42,7 +42,7 @@ export default function WaaPProvider({ children }: { children: React.ReactNode }
             styles: { darkMode: false },
           },
           project: {
-            name: 'AgentMotus',
+            name: 'Avril Dashboard',
             logo: process.env.NEXT_PUBLIC_WAAP_LOGO || '',
           },
           useStaging: false,

@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useWaaP } from '@/src/components/WaaPProvider';
+import Badge from '@/src/components/ui/Badge';
+import Button from '@/src/components/ui/Button';
+import Card from '@/src/components/ui/Card';
+import SectionTitle from '@/src/components/ui/SectionTitle';
 
 const WALLETS = [
   { address: '0x7a3…f12', label: 'Treasury', provider: 'Human.tech', balance: '2.4 CELO', permissions: 'Owner + Admin' },
@@ -48,15 +52,15 @@ export default function WalletsPage() {
   return (
     <div className="font-sans space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="modern-typography-medium gradient-text">Wallets</h2>
-        <button className="btn-primary text-sm">+ Create Wallet</button>
+        <SectionTitle title="Wallets" subtitle="Manage operational wallets and identity status." />
+        <Button className="text-sm">+ Create Wallet</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {WALLETS.map((w) => (
-          <div
+          <Card
             key={w.address}
-            className="glass p-5 smooth-transition hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(124,58,237,0.2)]"
+            className="p-5 smooth-transition hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(124,58,237,0.2)]"
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold text-white font-heading">{w.label}</span>
@@ -65,12 +69,12 @@ export default function WalletsPage() {
             <p className="text-2xl font-bold text-white font-heading mb-1">{w.balance}</p>
             <p className="text-xs text-muted mb-2">Provider: {w.provider}</p>
             <p className="text-xs text-muted">Permissions: {w.permissions}</p>
-          </div>
+          </Card>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        <div className="glass-strong p-6 lg:col-span-2">
+        <Card className="p-6 lg:col-span-2">
           <h3 className="font-semibold font-heading mb-3">Recent Wallet Activity</h3>
           <ul className="space-y-2 text-sm text-muted">
             {ACTIVITY.map((a, i) => (
@@ -79,10 +83,10 @@ export default function WalletsPage() {
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
 
         <div className="space-y-4">
-          <div className="glass-strong p-6">
+          <Card className="p-6">
             <h3 className="font-semibold font-heading mb-2">Human verification (Passport)</h3>
             <p className="text-xs text-muted mb-3">
               Verify your wallet with Human Passport to prove humanity. Required for some dashboard features.
@@ -94,8 +98,8 @@ export default function WalletsPage() {
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                  <Badge
+                    className={`inline-flex items-center gap-1.5 ${
                       humanVerified === true
                         ? 'bg-green-500/10 text-green-400'
                         : humanVerified === false
@@ -109,7 +113,7 @@ export default function WalletsPage() {
                       }`}
                     />
                     {humanVerified === true ? 'Verified' : humanVerified === false ? 'Not verified' : 'Unknown'}
-                  </span>
+                  </Badge>
                 </div>
                 <a
                   href="/verify"
@@ -119,7 +123,7 @@ export default function WalletsPage() {
                 </a>
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

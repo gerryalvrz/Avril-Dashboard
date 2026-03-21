@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Badge from '@/src/components/ui/Badge';
+import Button from '@/src/components/ui/Button';
+import Card from '@/src/components/ui/Card';
+import SectionTitle from '@/src/components/ui/SectionTitle';
 
 type Agent = {
   _id: string;
@@ -64,9 +68,9 @@ export default function AgentsPage() {
   return (
     <div className="font-sans">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="modern-typography-medium gradient-text">Workers (Office)</h2>
-        <Link href="/chats" className="btn-primary text-sm">
-          New chat (creates worker)
+        <SectionTitle title="Workers" subtitle="Sub-agents currently active in your office." />
+        <Link href="/chats">
+          <Button className="text-sm">New chat (creates worker)</Button>
         </Link>
       </div>
 
@@ -79,7 +83,7 @@ export default function AgentsPage() {
       {loading ? (
         <p className="text-sm text-muted">Loading workers…</p>
       ) : (
-        <div className="glass overflow-hidden rounded-2xl">
+        <Card className="overflow-hidden rounded-2xl">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10 text-muted text-left">
@@ -98,16 +102,12 @@ export default function AgentsPage() {
                   <td className="px-5 py-3 text-muted">{a.area ?? '—'}</td>
                   <td className="px-5 py-3 text-muted">{a.subArea ?? '—'}</td>
                   <td className="px-5 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
-                        a.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-yellow-500/10 text-yellow-400'
-                      }`}
-                    >
+                    <Badge className={a.status === 'active' ? 'bg-green-500/10 text-green-300' : 'bg-yellow-500/10 text-yellow-300'}>
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${a.status === 'active' ? 'bg-green-400' : 'bg-yellow-400'}`}
                       />
                       {a.status}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-5 py-3 text-muted">{formatLastActivity(a.lastActivity)}</td>
                   <td className="px-5 py-3">
@@ -131,7 +131,7 @@ export default function AgentsPage() {
               No workers yet. Create a chat to add a worker (each chat is backed by one sub-agent).
             </p>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

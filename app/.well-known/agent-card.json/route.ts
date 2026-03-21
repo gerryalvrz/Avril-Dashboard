@@ -5,8 +5,8 @@ export async function GET(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_APP_URL || origin;
 
   const body = {
-    name: 'AgentDashboard (Motus)',
-    description: 'Control plane for Motus multi-agent operations.',
+    name: 'Avril Dashboard',
+    description: 'Control plane for Avril multi-agent operations.',
     url,
     version: '0.3.0',
   };

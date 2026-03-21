@@ -1,6 +1,6 @@
-# AgentDashboard
+# Avril Dashboard
 
-Control plane for Motus multi-agent operations.
+Control plane for Avril multi-agent operations.
 
 ## MotusNS Deployment (Celo Mainnet)
 
@@ -55,8 +55,8 @@ The app can register an onchain agent identity on Celo using the global [ERC-800
 **Setup:**
 
 1. **Deploy to Vercel** (or use your deployed URL). Set in `.env.local`:
-   - `NEXT_PUBLIC_APP_URL=https://agents.motusdao.org` (no trailing slash)
-   - `NEXT_PUBLIC_AGENT_REGISTRATION_URI=https://agents.motusdao.org/agent-registration.json`
+   - `NEXT_PUBLIC_APP_URL=https://agents.avril-dashboard.app` (no trailing slash)
+   - `NEXT_PUBLIC_AGENT_REGISTRATION_URI=https://agents.avril-dashboard.app/agent-registration.json`
    - `NEXT_PUBLIC_CELO_RPC_URL=https://forno.celo.org` (optional; used when adding Celo in wallet)
    - **Identity registry contract (Celo mainnet)**: `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`
 
@@ -68,8 +68,8 @@ The app can register an onchain agent identity on Celo using the global [ERC-800
 
 **Hosted in this repo:**
 
-- **Logo:** `public/agent-logo.svg` (MotusDAO Hub icon). Served at `/agent-logo.svg`.
-- **Registration JSON:** `GET /agent-registration.json` (dynamic; uses `NEXT_PUBLIC_APP_URL`; default `https://agents.motusdao.org`).
+- **Logo:** `public/agent-logo.svg` (Avril Dashboard icon). Served at `/agent-logo.svg`.
+- **Registration JSON:** `GET /agent-registration.json` (dynamic; uses `NEXT_PUBLIC_APP_URL`; default `https://agents.avril-dashboard.app`).
 - **Agent card (A2A):** `GET /.well-known/agent-card.json`.
 - **Domain proof:** `GET /.well-known/agent-registration.json` (uses `NEXT_PUBLIC_ERC8004_AGENT_ID` and `NEXT_PUBLIC_ERC8004_AGENT_OWNER`).
 
@@ -94,8 +94,8 @@ The dashboard has successfully registered an onchain agent identity on Celo.
 | **Registry** | [8004: Identity Registry](https://celoscan.io/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432) |
 | **Agent identity (token ID)** | **1849** |
 | **Registration tx** | [0xc7082bdae53cf295a97af538a5a9df3b86071fb3181b3df5ef0609091c0c19b9](https://celoscan.io/tx/0xc7082bdae53cf295a97af538a5a9df3b86071fb3181b3df5ef0609091c0c19b9) |
-| **Agent URI** | `https://agents.motusdao.org/agent-registration.json` |
-| **Domain proof** | `https://agents.motusdao.org/.well-known/agent-registration.json` (after setting `NEXT_PUBLIC_ERC8004_AGENT_ID=1849` and owner in env) |
+| **Agent URI** | `https://agents.avril-dashboard.app/agent-registration.json` |
+| **Domain proof** | `https://agents.avril-dashboard.app/.well-known/agent-registration.json` (after setting `NEXT_PUBLIC_ERC8004_AGENT_ID=1849` and owner in env) |
 
 
 ## Included baseline

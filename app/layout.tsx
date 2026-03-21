@@ -7,8 +7,8 @@ import { UIStoreProvider } from '@/src/lib/store';
 import ThemeProvider from '@/src/components/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: 'AgentDashboard',
-  description: 'Control plane for multi-agent operations',
+  title: 'Avril Dashboard',
+  description: 'Control plane for Avril multi-agent operations',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

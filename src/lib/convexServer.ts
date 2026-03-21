@@ -120,7 +120,7 @@ export async function sendAgentMessage(args: {
   return await (client as any).mutation('serverChats:sendAgentMessageServer', {
     chatId: args.chatId,
     content: args.content,
-    authorId: args.authorId ?? 'AgentMotus',
+    authorId: args.authorId ?? 'AvrilAgent',
     serverSecret,
   });
 }

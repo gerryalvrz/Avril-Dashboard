@@ -1,83 +1,127 @@
 'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
-const NAV = [
-  { href: '/home', label: 'Home', icon: '🏠' },
-  { href: '/profile', label: 'Profile', icon: '🧑‍🚀' },
-  { href: '/verify', label: 'Verification', icon: '✅' },
-  { href: '/agents', label: 'Agents', icon: '🤖' },
-  { href: '/agents/office', label: 'Agent Office', icon: '🏢' },
-  { href: '/tasks', label: 'Tasks', icon: '📋' },
-  { href: '/chats', label: 'Chats', icon: '💬' },
-  { href: '/wallets', label: 'Wallets', icon: '🔐' },
+import type { ReactNode } from 'react';
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import {
+  BadgeCheck,
+  Bot,
+  Building2,
+  ClipboardList,
+  Home,
+  MessageSquare,
+  UserRound,
+  Wallet,
+} from 'lucide-react';
+import GlassIcons, { type GlassIconItem } from '@/components/ui/glass-icons';
+
+const NAV_BASE: Array<{
+  href: string;
+  label: string;
+  color: GlassIconItem['color'];
+  icon: ReactNode;
+}> = [
+  { href: '/home', label: 'Home', color: 'cyan', icon: <Home className="w-5 h-5 text-white" /> },
+  { href: '/profile', label: 'Profile', color: 'cyan', icon: <UserRound className="w-5 h-5 text-white" /> },
+  { href: '/verify', label: 'Verify', color: 'cyan', icon: <BadgeCheck className="w-5 h-5 text-white" /> },
+  { href: '/agents', label: 'Agents', color: 'cyan', icon: <Bot className="w-5 h-5 text-white" /> },
+  { href: '/agents/office', label: 'Office', color: 'cyan', icon: <Building2 className="w-5 h-5 text-white" /> },
+  { href: '/tasks', label: 'Tasks', color: 'cyan', icon: <ClipboardList className="w-5 h-5 text-white" /> },
+  { href: '/chats', label: 'Chats', color: 'cyan', icon: <MessageSquare className="w-5 h-5 text-white" /> },
+  { href: '/wallets', label: 'Wallets', color: 'cyan', icon: <Wallet className="w-5 h-5 text-white" /> },
 ];
 
-type SidebarProps = {
-  mobileOpen: boolean;
+function isNavActive(pathname: string, href: string) {
+  if (href === '/agents') {
+    return pathname.startsWith('/agents') && !pathname.startsWith('/agents/office');
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+type NavDrawerProps = {
+  open: boolean;
   onClose: () => void;
 };
 
-export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
+/** Full-screen overlay with glass icon grid centered on the page (hamburger). */
+export default function NavDrawer({ open, onClose }: NavDrawerProps) {
   const pathname = usePathname();
 
-  return (
-    <>
-      {mobileOpen && (
-        <button
-          aria-label="Close menu"
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={onClose}
-        />
-      )}
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
-      <aside
-        className={`fixed top-0 left-0 h-screen w-64 glass-sidebar flex flex-col py-6 px-3 z-40 transform transition-transform duration-200 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0`}
+  const items: GlassIconItem[] = NAV_BASE.map((item) => ({
+    href: item.href,
+    label: item.label,
+    color: item.color,
+    icon: item.icon,
+    active: isNavActive(pathname, item.href),
+  }));
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-x-0 top-16 bottom-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      role="presentation"
+    >
+      <button
+        type="button"
+        aria-label="Close menu"
+        className="absolute inset-0 bg-black/45 backdrop-blur-md z-0"
+        onClick={onClose}
+      />
+
+      <div
+        id="nav-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nav-drawer-title"
+        className="relative z-10 w-full max-w-lg rounded-2xl px-6 py-5 sm:px-8 sm:py-6 pointer-events-auto glass-nav-modal"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-2 px-3 mb-8">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">⚡</span>
-            <span className="text-lg font-bold tracking-tight text-white font-heading">AgentDashboard</span>
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-2xl shrink-0" aria-hidden>
+              ⚡
+            </span>
+            <h2 id="nav-drawer-title" className="text-lg font-bold tracking-tight text-white font-heading truncate">
+              Avril Dashboard
+            </h2>
           </div>
           <button
-            className="md:hidden text-muted hover:text-white"
+            type="button"
+            className="shrink-0 p-2 rounded-xl text-muted hover:text-white hover:bg-white/10 smooth-transition border border-white/10"
             onClick={onClose}
-            aria-label="Close sidebar"
+            aria-label="Close menu"
           >
             ✕
           </button>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1">
-          {NAV.map((item) => {
-            const active = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all smooth-transition ${
-                  active
-                    ? 'bg-accent/15 text-accent'
-                    : 'text-muted hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <span className="text-base">{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex justify-center" aria-label="Main navigation">
+          <GlassIcons
+            items={items}
+            columns={4}
+            colorful
+            onItemClick={onClose}
+            className="justify-items-center w-full max-w-md mx-auto"
+          />
         </nav>
 
-        <div className="px-3 pt-4 border-t border-white/10">
+        <div className="mt-6 pt-4 border-t border-white/10 flex justify-center">
           <div className="flex items-center gap-2 text-xs text-muted">
-            <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-            AgentMotus · Online
+            <span className="w-2 h-2 rounded-full bg-green-400 inline-block shrink-0" />
+            Avril Agent · Online
           </div>
         </div>
-      </aside>
-    </>
+      </div>
+    </div>
   );
 }

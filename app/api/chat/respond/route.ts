@@ -74,7 +74,7 @@ type VeniceResult =
 
 function buildVeniceMessages(input: BridgeInput): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const systemParts = [
-    'You are AgentMotus, an autonomous assistant for AgentDashboard.',
+    'You are AvrilAgent, an autonomous assistant for Avril Dashboard.',
     input.area ? `Primary area: ${input.area}.` : null,
     input.subArea ? `Sub-area: ${input.subArea}.` : null,
   ].filter(Boolean);
@@ -94,39 +94,69 @@ function buildVeniceMessages(input: BridgeInput): Array<{ role: 'system' | 'user
 }
 
 async function callVeniceInference(input: BridgeInput): Promise<VeniceResult> {
-  const veniceKey = process.env.VENICE_INFERENCE_KEY;
+  const veniceRaw = process.env.VENICE_INFERENCE_KEY ?? process.env.VENICE_ADMIN_KEY;
   const veniceUrl = process.env.VENICE_INFERENCE_URL || 'https://api.venice.ai/api/v1/chat/completions';
   const veniceModel = process.env.VENICE_MODEL || 'venice-uncensored';
 
-  if (!veniceKey) {
+  if (!veniceRaw) {
     return {
       ok: false,
       code: 'VENICE_ERROR',
-      message: 'Venice is not configured. Missing VENICE_INFERENCE_KEY.',
+      message: 'Venice is not configured. Missing VENICE_INFERENCE_KEY or VENICE_ADMIN_KEY.',
       retryable: false,
     };
   }
 
+  const normalizedRaw = veniceRaw.trim().replace(/^Bearer\s+/i, '');
+  const keyCandidates = Array.from(
+    new Set(
+      normalizedRaw.startsWith('VENICE_')
+        ? [normalizedRaw]
+        : [normalizedRaw, `VENICE_ADMIN_KEY_${normalizedRaw}`, `VENICE_ADMIN_KEY_W_${normalizedRaw}`],
+    ),
+  );
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000);
   try {
-    const res = await fetch(veniceUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${veniceKey}`,
-      },
-      body: JSON.stringify({
-        model: veniceModel,
-        messages: buildVeniceMessages(input),
-        temperature: 0.6,
-      }),
-      cache: 'no-store',
-      signal: controller.signal,
-    });
+    let res: Response | null = null;
+    let bodyText = '';
+    for (const key of keyCandidates) {
+      const candidateRes = await fetch(veniceUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: veniceModel,
+          messages: buildVeniceMessages(input),
+          temperature: 0.6,
+        }),
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      if (candidateRes.ok || candidateRes.status !== 401) {
+        res = candidateRes;
+        break;
+      }
+
+      bodyText = await candidateRes.text().catch(() => '');
+      res = candidateRes;
+    }
+
+    if (!res) {
+      return {
+        ok: false,
+        code: 'VENICE_ERROR',
+        message: 'Venice request failed before a response was received.',
+        retryable: true,
+      };
+    }
 
     if (!res.ok) {
-      const bodyText = await res.text().catch(() => '');
+      if (!bodyText) bodyText = await res.text().catch(() => '');
       return {
         ok: false,
         code: 'VENICE_ERROR',
@@ -197,7 +227,7 @@ async function callOpenClawBridge(input: BridgeInput): Promise<BridgeResult> {
         body: JSON.stringify({
           message: input.message,
           model: input.model ?? 'codex',
-          source: 'agentdashboard',
+          source: 'avril-dashboard',
           chatId: input.chatId,
           ...(input.agentId !== undefined && { agentId: input.agentId }),
           ...(input.area !== undefined && { area: input.area }),
@@ -387,7 +417,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      await sendAgentMessage({ chatId, content: result.text, authorId: 'AgentMotus' });
+      await sendAgentMessage({ chatId, content: result.text, authorId: 'AvrilAgent' });
     } catch (err) {
       return errorResponse(502, 'CONVEX_ERROR', 'Agent reply received but failed to persist.', {
         retryable: true,

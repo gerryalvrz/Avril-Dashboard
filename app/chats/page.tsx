@@ -13,6 +13,9 @@ import {
   type AgentArea,
   type AgentSubArea,
 } from '@/src/lib/agentAreas';
+import Button from '@/src/components/ui/Button';
+import Card from '@/src/components/ui/Card';
+import SectionTitle from '@/src/components/ui/SectionTitle';
 
 type Chat = {
   _id: string;
@@ -123,7 +126,7 @@ export default function ChatsPage() {
   };
 
   useEffect(() => {
-    const savedModel = localStorage.getItem('agentdashboard:model') as ModelChoice | null;
+    const savedModel = localStorage.getItem('avril-dashboard:model') as ModelChoice | null;
     if (savedModel === 'codex' || savedModel === 'opus' || savedModel === 'venice') setModel(savedModel);
   }, []);
 
@@ -133,7 +136,7 @@ export default function ChatsPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    localStorage.setItem('agentdashboard:model', model);
+    localStorage.setItem('avril-dashboard:model', model);
   }, [model]);
 
   useEffect(() => {
@@ -325,14 +328,16 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-5rem)] font-sans">
-      <div className="w-72 glass overflow-y-auto flex-shrink-0 rounded-2xl">
+    <div className="font-sans space-y-4">
+      <SectionTitle title="Chats" subtitle="Threaded conversations with Avril agents and models." />
+      <div className="flex gap-4 h-[calc(100vh-10rem)]">
+      <Card className="w-72 overflow-y-auto flex-shrink-0 rounded-2xl">
         <div className="p-4 border-b border-white/10 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-sm font-heading">Threads</h3>
-            <button onClick={handleCreateChat} className="btn-primary text-xs py-1.5 px-3">
+            <Button onClick={handleCreateChat} className="text-xs py-1.5 px-3">
               + New
-            </button>
+            </Button>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
@@ -397,9 +402,9 @@ export default function ChatsPage() {
         ))}
 
         {chats.length === 0 && <p className="p-4 text-xs text-muted">No chats yet. Create one.</p>}
-      </div>
+      </Card>
 
-      <div className="flex-1 glass rounded-2xl flex flex-col">
+      <Card className="flex-1 rounded-2xl flex flex-col">
         <div className="p-4 border-b border-white/10 flex items-center justify-between gap-4">
           <div className="min-w-0">
             <h3 className="font-semibold text-sm font-heading">{selectedChat?.title || 'Select a chat'}</h3>
@@ -420,13 +425,14 @@ export default function ChatsPage() {
               placeholder="Office launch prompt (optional)"
               className="bg-surface border border-border rounded-lg px-2 py-1 text-gray-200 w-64 max-w-full"
             />
-            <button
+            <Button
               onClick={() => void handleLaunchOffice()}
               disabled={!selectedChatId || launchingOffice}
-              className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50"
+              variant="secondary"
+              className="text-xs py-1.5 px-3 disabled:opacity-50"
             >
               {launchingOffice ? 'Launching…' : 'Launch Agent Office'}
-            </button>
+            </Button>
             <span className="text-muted">Model:</span>
             <select
               value={model}
@@ -467,7 +473,7 @@ export default function ChatsPage() {
           {streamingText && (
             <div className="flex flex-col items-start">
               <div className="max-w-[70%] px-4 py-2.5 rounded-xl text-sm bg-accent/10 text-gray-200">
-                <p className="text-xs font-medium text-muted mb-1">AgentMotus · now</p>
+                <p className="text-xs font-medium text-muted mb-1">AvrilAgent · now</p>
                 <div className="chat-markdown whitespace-pre-wrap">{streamingText}</div>
               </div>
             </div>
@@ -487,15 +493,16 @@ export default function ChatsPage() {
               placeholder="Type a message..."
               className="flex-1 bg-surface border border-border rounded-xl px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-accent smooth-transition"
             />
-            <button
+            <Button
               type="submit"
               disabled={sending}
-              className="btn-primary text-sm disabled:opacity-50"
+              className="text-sm disabled:opacity-50"
             >
               {sending ? 'Thinking…' : 'Send'}
-            </button>
+            </Button>
           </div>
         </form>
+      </Card>
       </div>
     </div>
   );

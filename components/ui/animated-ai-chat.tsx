@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useTransition } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useCallback, useTransition, useMemo, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
@@ -76,12 +75,14 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 type LocalMessage = {
   id: string;
-  role: "user" | "venice";
+  role: "user" | "assistant";
   content: string;
   createdAt: string;
+  model?: ModelChoice;
 };
 
 const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN ?? "";
+type ModelChoice = "codex" | "opus" | "venice";
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, containerClassName, showRing = true, ...props }, ref) => {
@@ -136,10 +137,30 @@ export function AnimatedAIChat() {
   const [status, setStatus] = useState("");
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<LocalMessage[]>([]);
+  const [model, setModel] = useState<ModelChoice>("venice");
   /** Folder hidden until user opens it via Fast Ideas */
   const [showFolder, setShowFolder] = useState(false);
   const commandPaletteRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const authHeaders = useMemo<Record<string, string>>(() => {
+    const headers: Record<string, string> = {};
+    if (DASHBOARD_TOKEN) headers["x-dashboard-token"] = DASHBOARD_TOKEN;
+    return headers;
+  }, []);
+
+  useEffect(() => {
+    const savedModel = localStorage.getItem("avril-dashboard:model-home") as ModelChoice | null;
+    if (savedModel === "codex" || savedModel === "opus" || savedModel === "venice") {
+      setModel(savedModel);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("avril-dashboard:model-home", model);
+  }, [model]);
+
+  const modelLabel = model === "venice" ? "Venice" : model === "codex" ? "OpenClaw (Codex)" : "OpenClaw (Opus)";
+  const typingLabel = model === "venice" ? "Venice thinking" : "OpenClaw thinking";
 
   const commandSuggestions: CommandSuggestion[] = [
     { icon: <ImageIcon className="w-4 h-4" />, label: "Clone UI", description: "Generate a UI from a screenshot", prefix: "/clone" },
@@ -186,9 +207,10 @@ export function AnimatedAIChat() {
     try {
       const res = await fetch("/api/chat/create", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "x-dashboard-token": DASHBOARD_TOKEN,
+          ...authHeaders,
         },
         body: JSON.stringify({
           title: "Home Venice Chat",
@@ -196,7 +218,9 @@ export function AnimatedAIChat() {
         }),
       });
       if (!res.ok) {
-        setStatus("Could not initialize Venice chat session.");
+        const payload = await res.json().catch(() => ({} as { error?: string }));
+        const msg = typeof payload?.error === "string" ? payload.error : "Could not initialize Venice chat session.";
+        setStatus(res.status === 401 ? "Unauthorized chat session request. Check dashboard token/session." : msg);
         return null;
       }
       const data = await res.json();
@@ -256,32 +280,36 @@ export function AnimatedAIChat() {
 
       const res = await fetch("/api/chat/respond", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "x-dashboard-token": DASHBOARD_TOKEN,
+          ...authHeaders,
         },
         body: JSON.stringify({
           chatId: resolvedChatId,
           message: content,
-          model: "venice",
+          model,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setStatus(`Venice error: ${data?.error?.message || "request failed"}`);
+        setStatus(`${modelLabel} error: ${data?.error?.message || "request failed"}`);
         return;
       }
 
       const reply = typeof data?.reply === "string" ? data.reply : "";
       if (!reply) {
-        setStatus("Venice returned an empty response.");
+        setStatus(`${modelLabel} returned an empty response.`);
         return;
       }
 
-      setMessages((prev) => [...prev, { id: `${Date.now()}-venice`, role: "venice", content: reply, createdAt: new Date().toISOString() }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: `${Date.now()}-assistant`, role: "assistant", model, content: reply, createdAt: new Date().toISOString() },
+      ]);
     } catch {
-      setStatus("Network error contacting Venice.");
+      setStatus(`Network error contacting ${modelLabel}.`);
     } finally {
       setIsTyping(false);
     }
@@ -339,13 +367,13 @@ export function AnimatedAIChat() {
               />
             </motion.div>
             <motion.p className="text-sm text-white/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-              Model: Venice
+              Model: {modelLabel}
             </motion.p>
           </div>
 
           <div ref={scrollRef} className="max-h-64 overflow-y-auto space-y-2 px-1">
             {messages.length === 0 ? (
-              <p className="text-center text-sm text-white/45">Start a Venice conversation by sending your first message.</p>
+              <p className="text-center text-sm text-white/45">Start a conversation by sending your first message.</p>
             ) : (
               messages.map((message) => (
                 <div
@@ -355,7 +383,15 @@ export function AnimatedAIChat() {
                     message.role === "user" ? "ml-auto bg-white/10 text-white/90" : "mr-auto bg-violet-500/10 text-white/90 border border-violet-400/20",
                   )}
                 >
-                  <p className="text-[11px] text-white/45 mb-1">{message.role === "user" ? "You" : "Venice"}</p>
+                  <p className="text-[11px] text-white/45 mb-1">
+                    {message.role === "user"
+                      ? "You"
+                      : message.model === "venice"
+                        ? "Venice"
+                        : message.model === "codex"
+                          ? "OpenClaw (Codex)"
+                          : "OpenClaw (Opus)"}
+                  </p>
                   <p>{message.content}</p>
                 </div>
               ))
@@ -407,7 +443,7 @@ export function AnimatedAIChat() {
                 onKeyDown={handleKeyDown}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                placeholder="Ask Venice a question..."
+                placeholder={`Ask ${modelLabel} a question...`}
                 containerClassName="w-full"
                 className={cn(
                   "w-full px-4 py-3",
@@ -447,6 +483,16 @@ export function AnimatedAIChat() {
 
             <div className="p-4 border-t border-white/[0.05] flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
+                <select
+                  value={model}
+                  onChange={(e) => setModel(e.target.value as ModelChoice)}
+                  className="h-9 rounded-md border border-white/10 bg-black/40 px-2 text-xs text-white/90 outline-none focus:ring-1 focus:ring-violet-400/50"
+                  aria-label="Choose AI model"
+                >
+                  <option value="venice">Venice</option>
+                  <option value="codex">OpenClaw (Codex)</option>
+                  <option value="opus">OpenClaw (Opus)</option>
+                </select>
                 <motion.button type="button" onClick={handleAttachFile} whileTap={{ scale: 0.94 }} className="p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors relative group">
                   <Paperclip className="w-4 h-4" />
                   <span className="absolute inset-0 bg-white/[0.05] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -544,7 +590,7 @@ export function AnimatedAIChat() {
                 <span className="text-xs font-medium text-white/90 mb-0.5">vn</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-white/70">
-                <span>Venice thinking</span>
+                <span>{typingLabel}</span>
                 <TypingDots />
               </div>
             </div>

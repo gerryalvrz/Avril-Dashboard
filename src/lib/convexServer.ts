@@ -284,3 +284,107 @@ export async function listOrchestrationEvents(args: { sessionId: string; limit?:
     serverSecret,
   });
 }
+
+export async function getControlPlaneState(args: { organizationId?: string }) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  const organizationId = args.organizationId ?? (await getDefaultOrganizationId());
+  return await (client as any).query('serverControlPlane:getControlPlaneStateServer', {
+    organizationId,
+    serverSecret,
+  });
+}
+
+export async function createFounderIdea(args: {
+  organizationId?: string;
+  founderUserId?: string;
+  title: string;
+  ideaText: string;
+  targetUser?: string;
+  problem?: string;
+  monetizationPreference?: string;
+  businessModelPreference?: string;
+  desiredAutomationLevel?: string;
+  skillsResources?: string;
+  timeAvailable?: string;
+  country?: string;
+  language?: string;
+  channelPreferences?: string[];
+  riskTolerance?: string;
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  const organizationId = args.organizationId ?? (await getDefaultOrganizationId());
+  return await (client as any).mutation('serverFounder:createFounderIdeaServer', {
+    organizationId,
+    founderUserId: args.founderUserId,
+    title: args.title,
+    ideaText: args.ideaText,
+    targetUser: args.targetUser,
+    problem: args.problem,
+    monetizationPreference: args.monetizationPreference,
+    businessModelPreference: args.businessModelPreference,
+    desiredAutomationLevel: args.desiredAutomationLevel,
+    skillsResources: args.skillsResources,
+    timeAvailable: args.timeAvailable,
+    country: args.country,
+    language: args.language,
+    channelPreferences: args.channelPreferences,
+    riskTolerance: args.riskTolerance,
+    serverSecret,
+  });
+}
+
+export async function selectCompanyOption(args: {
+  ideaId: string;
+  selectedOptionKey: string;
+  selectedProfile: 'conservative' | 'balanced' | 'ambitious';
+  rationale?: string;
+  selectedByUserId?: string;
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).mutation('serverFounder:selectCompanyOptionServer', {
+    ideaId: args.ideaId,
+    selectedOptionKey: args.selectedOptionKey,
+    selectedProfile: args.selectedProfile,
+    rationale: args.rationale,
+    selectedByUserId: args.selectedByUserId,
+    serverSecret,
+  });
+}
+
+export async function generateFounderBrief(args: { ideaId?: string }) {
+  const client = getClient();
+  return await (client as any).action('founderGeneration:generateFounderBrief', {
+    ideaId: args.ideaId,
+  });
+}
+
+export async function generateCompanyOptions(args: { ideaId?: string }) {
+  const client = getClient();
+  return await (client as any).action('founderGeneration:generateCompanyOptions', {
+    ideaId: args.ideaId,
+  });
+}
+
+export async function generateBusinessBlueprint(args: { ideaId?: string }) {
+  const client = getClient();
+  return await (client as any).action('founderGeneration:generateBusinessBlueprint', {
+    ideaId: args.ideaId,
+  });
+}
+
+export async function generateIgnitionPrompt(args: { ideaId?: string }) {
+  const client = getClient();
+  return await (client as any).action('founderGeneration:generateIgnitionPrompt', {
+    ideaId: args.ideaId,
+  });
+}
+
+export async function deployOpenClawInstance(args: { ideaId?: string }) {
+  const client = getClient();
+  return await (client as any).action('deployments:deployOpenClawInstance', {
+    ideaId: args.ideaId,
+  });
+}

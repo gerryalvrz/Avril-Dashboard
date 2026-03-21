@@ -3,26 +3,27 @@
 import { useState, useEffect } from 'react';
 import { useWaaP } from '@/src/components/WaaPProvider';
 import Badge from '@/src/components/ui/Badge';
-import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
 
-const WALLETS = [
-  { address: '0x7a3…f12', label: 'Treasury', provider: 'Human.tech', balance: '2.4 CELO', permissions: 'Owner + Admin' },
-  { address: '0x1b9…a03', label: 'Operations', provider: 'AA Service', balance: '0.8 CELO', permissions: 'Admin + Operator' },
-  { address: '0x4e2…d77', label: 'Agent Wallet', provider: 'AA Service', balance: '0.1 CELO', permissions: 'Operator (execute)' },
-];
-
-const ACTIVITY = [
-  { action: 'Wallet created', wallet: 'Agent Wallet', by: 'Admin', time: '1h ago' },
-  { action: 'Permission granted', wallet: 'Operations', by: 'Owner', time: '3h ago' },
-  { action: 'Transfer approved', wallet: 'Treasury', by: 'Owner + Admin', time: '1d ago' },
-];
+type ControlState = {
+  pendingApprovals?: Array<{
+    _id: string;
+    resourceType: string;
+    status: 'pending' | 'approved' | 'rejected';
+    reason?: string;
+    createdAt: string;
+  }>;
+  deploymentJob?: { status?: string } | null;
+  runtimeInstance?: { status?: string } | null;
+};
 
 export default function WalletsPage() {
   const { address } = useWaaP();
   const [humanVerified, setHumanVerified] = useState<boolean | null>(null);
   const [loadingHuman, setLoadingHuman] = useState(false);
+  const [state, setState] = useState<ControlState | null>(null);
+  const [loadingState, setLoadingState] = useState(false);
 
   useEffect(() => {
     if (!address) {
@@ -49,40 +50,76 @@ export default function WalletsPage() {
     };
   }, [address]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingState(true);
+    fetch('/api/control/state', { cache: 'no-store', credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) {
+          setState({
+            pendingApprovals: data.pendingApprovals ?? [],
+            deploymentJob: data.deploymentJob ?? null,
+            runtimeInstance: data.runtimeInstance ?? null,
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingState(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="font-sans space-y-8">
-      <div className="flex items-center justify-between">
-        <SectionTitle title="Wallets" subtitle="Manage operational wallets and identity status." />
-        <Button className="text-sm">+ Create Wallet</Button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {WALLETS.map((w) => (
-          <Card
-            key={w.address}
-            className="p-5 smooth-transition hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(124,58,237,0.2)]"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold text-white font-heading">{w.label}</span>
-              <span className="text-xs text-muted font-mono">{w.address}</span>
-            </div>
-            <p className="text-2xl font-bold text-white font-heading mb-1">{w.balance}</p>
-            <p className="text-xs text-muted mb-2">Provider: {w.provider}</p>
-            <p className="text-xs text-muted">Permissions: {w.permissions}</p>
-          </Card>
-        ))}
-      </div>
+      <SectionTitle title="Identity and Approvals" subtitle="Session identity, Human verification, and live approval posture." />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        <Card className="p-6 lg:col-span-2">
-          <h3 className="font-semibold font-heading mb-3">Recent Wallet Activity</h3>
-          <ul className="space-y-2 text-sm text-muted">
-            {ACTIVITY.map((a, i) => (
-              <li key={i}>
-                <b className="text-white">{a.action}</b> on <code>{a.wallet}</code> by {a.by} — {a.time}
-              </li>
-            ))}
-          </ul>
+        <Card className="p-6 lg:col-span-2 space-y-4">
+          <div>
+            <h3 className="font-semibold font-heading mb-2">Connected identity</h3>
+            {!address ? (
+              <p className="text-xs text-muted">No wallet connected.</p>
+            ) : (
+              <p className="text-xs text-muted font-mono break-all">{address}</p>
+            )}
+          </div>
+
+          <div>
+            <h3 className="font-semibold font-heading mb-2">Control-plane approval state</h3>
+            {loadingState ? (
+              <p className="text-xs text-muted">Loading control-plane state…</p>
+            ) : (
+              <>
+                <div className="flex gap-2 flex-wrap mb-3">
+                  <Badge className="bg-amber-500/10 text-amber-400">
+                    Pending approvals: {state?.pendingApprovals?.length ?? 0}
+                  </Badge>
+                  <Badge className="bg-blue-500/10 text-blue-400">
+                    Deployment: {state?.deploymentJob?.status ?? 'none'}
+                  </Badge>
+                  <Badge className="bg-emerald-500/10 text-emerald-400">
+                    Runtime: {state?.runtimeInstance?.status ?? 'none'}
+                  </Badge>
+                </div>
+                {!state?.pendingApprovals?.length ? (
+                  <p className="text-xs text-muted">No pending approvals.</p>
+                ) : (
+                  <ul className="space-y-2 text-xs">
+                    {state.pendingApprovals.slice(0, 10).map((a) => (
+                      <li key={a._id} className="border border-white/10 rounded-lg px-3 py-2">
+                        <p className="text-white">{a.resourceType}</p>
+                        <p className="text-muted">{a.reason || 'Approval required'}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
         </Card>
 
         <div className="space-y-4">

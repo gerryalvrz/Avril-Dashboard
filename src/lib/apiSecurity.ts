@@ -22,17 +22,25 @@ export function getClientIp(req: Request) {
 }
 
 export function requireDashboardToken(req: Request) {
-  // Public demo mode: allow access without server-side verification.
-  // Enable by setting PUBLIC_DEMO=true in the server environment.
-  if (process.env.PUBLIC_DEMO === 'true') return true;
-
   if (requireSession(req)) return true;
 
-  // Legacy fallback token gate (kept temporarily for backward compatibility).
-  const expected = process.env.DASHBOARD_APP_TOKEN;
-  if (!expected) return false;
-  const incoming = req.headers.get('x-dashboard-token');
-  return incoming === expected;
+  // Legacy server-side token fallback for non-session demo clients.
+  // Only enabled when DASHBOARD_APP_TOKEN is configured on the server.
+  const expectedToken = process.env.DASHBOARD_APP_TOKEN;
+  if (expectedToken) {
+    const incomingToken = req.headers.get('x-dashboard-token');
+    if (incomingToken && incomingToken === expectedToken) return true;
+  }
+
+  // Controlled bypass for demo emergencies. Disabled by default.
+  const bypassEnabled = process.env.DEMO_BYPASS_ENABLED === 'true';
+  const bypassKey = process.env.DEMO_BYPASS_KEY;
+  if (bypassEnabled && bypassKey) {
+    const incoming = req.headers.get('x-demo-bypass-key');
+    if (incoming === bypassKey) return true;
+  }
+
+  return false;
 }
 
 export function hitRateLimit(key: string, limit: number) {

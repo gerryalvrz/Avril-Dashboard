@@ -17,6 +17,8 @@ import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
 
+const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN ?? '';
+
 type Chat = {
   _id: string;
   title: string;
@@ -85,6 +87,11 @@ export default function ChatsPage() {
   const [launchingOffice, setLaunchingOffice] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const authHeaders = useMemo<Record<string, string>>(() => {
+    const headers: Record<string, string> = {};
+    if (DASHBOARD_TOKEN) headers['x-dashboard-token'] = DASHBOARD_TOKEN;
+    return headers;
+  }, []);
 
   const subAreaOptions = useMemo(() => getSubAreasForArea(newChatArea), [newChatArea]);
 
@@ -104,7 +111,8 @@ export default function ChatsPage() {
     try {
       const res = await fetch(`/api/chat/state${query}`, {
         cache: 'no-store',
-        headers: { 'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc' },
+        credentials: 'include',
+        headers: { ...authHeaders },
       });
       if (!res.ok) {
         let text = '';
@@ -171,9 +179,10 @@ export default function ChatsPage() {
   async function handleCreateChat() {
     const res = await fetch('/api/chat/create', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+        ...authHeaders,
       },
       body: JSON.stringify(createChatPayload),
     });
@@ -204,9 +213,10 @@ export default function ChatsPage() {
     if (!chatId) {
       const createRes = await fetch('/api/chat/create', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+          ...authHeaders,
         },
         body: JSON.stringify({
           title: 'New Chat',
@@ -235,9 +245,10 @@ export default function ChatsPage() {
         '/api/chat/respond',
         {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+            ...authHeaders,
           },
           body: JSON.stringify({ chatId, message, model }),
         },
@@ -302,9 +313,10 @@ export default function ChatsPage() {
     try {
       const res = await fetch('/api/orchestration/spawn', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
+          ...authHeaders,
         },
         body: JSON.stringify({ chatId: selectedChatId, prompt }),
       });
@@ -328,14 +340,20 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="font-sans space-y-4">
-      <SectionTitle title="Chats" subtitle="Threaded conversations with Avril agents and models." />
-      <div className="flex gap-4 h-[calc(100vh-10rem)]">
-      <Card className="w-72 overflow-y-auto flex-shrink-0 rounded-2xl">
+    <div className="font-sans space-y-4 min-h-[calc(100vh-6rem)] relative overflow-hidden lab-bg">
+      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px] animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[128px] animate-pulse delay-700" />
+      </div>
+      <div className="relative z-10 space-y-4">
+        <SectionTitle title="Chats" subtitle="Threaded conversations with Avril agents and models." />
+      </div>
+      <div className="relative z-10 flex gap-4 h-[calc(100vh-11rem)]">
+      <Card className="w-80 overflow-y-auto flex-shrink-0 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-2xl shadow-2xl">
         <div className="p-4 border-b border-white/10 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm font-heading">Threads</h3>
-            <Button onClick={handleCreateChat} className="text-xs py-1.5 px-3">
+            <h3 className="font-semibold text-sm font-heading text-white/90">Threads</h3>
+            <Button onClick={handleCreateChat} className="text-xs py-1.5 px-3 rounded-xl">
               + New
             </Button>
           </div>
@@ -350,7 +368,7 @@ export default function ChatsPage() {
                   const opts = getSubAreasForArea(a);
                   setNewChatSubArea(opts.length ? '' : '');
                 }}
-                className="w-full bg-surface border border-border rounded-lg px-2 py-1 text-gray-200"
+                className="w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1 text-gray-200"
               >
                 {AGENT_AREAS.map((a) => (
                   <option key={a} value={a}>
@@ -364,7 +382,7 @@ export default function ChatsPage() {
               <select
                 value={newChatSubArea}
                 onChange={(e) => setNewChatSubArea(e.target.value as AgentSubArea | '')}
-                className="w-full bg-surface border border-border rounded-lg px-2 py-1 text-gray-200"
+                className="w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1 text-gray-200"
                 disabled={subAreaOptions.length === 0}
               >
                 <option value="">—</option>
@@ -382,8 +400,8 @@ export default function ChatsPage() {
           <button
             key={t._id}
             onClick={() => setSelectedChatId(t._id)}
-            className={`w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/[0.02] smooth-transition ${
-              selectedChatId === t._id ? 'bg-white/[0.03]' : ''
+            className={`w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/[0.04] smooth-transition ${
+              selectedChatId === t._id ? 'bg-violet-500/10 border-l-2 border-l-violet-300' : ''
             }`}
           >
             <div className="flex justify-between items-center mb-1">
@@ -404,10 +422,10 @@ export default function ChatsPage() {
         {chats.length === 0 && <p className="p-4 text-xs text-muted">No chats yet. Create one.</p>}
       </Card>
 
-      <Card className="flex-1 rounded-2xl flex flex-col">
-        <div className="p-4 border-b border-white/10 flex items-center justify-between gap-4">
+      <Card className="flex-1 rounded-2xl flex flex-col border border-white/[0.08] bg-white/[0.02] backdrop-blur-2xl shadow-2xl">
+        <div className="p-4 border-b border-white/10 flex items-center justify-between gap-4 bg-black/10 rounded-t-2xl">
           <div className="min-w-0">
-            <h3 className="font-semibold text-sm font-heading">{selectedChat?.title || 'Select a chat'}</h3>
+            <h3 className="font-semibold text-sm font-heading text-white/90">{selectedChat?.title || 'Select a chat'}</h3>
             {selectedChat?.agent && (
               <p className="text-xs text-muted mt-0.5">
                 {selectedChat.agent.name}
@@ -423,7 +441,7 @@ export default function ChatsPage() {
               value={launchPrompt}
               onChange={(e) => setLaunchPrompt(e.target.value)}
               placeholder="Office launch prompt (optional)"
-              className="bg-surface border border-border rounded-lg px-2 py-1 text-gray-200 w-64 max-w-full"
+              className="bg-black/20 border border-white/10 rounded-lg px-2 py-1 text-gray-200 w-64 max-w-full"
             />
             <Button
               onClick={() => void handleLaunchOffice()}
@@ -437,7 +455,7 @@ export default function ChatsPage() {
             <select
               value={model}
               onChange={(e) => setModel(e.target.value as ModelChoice)}
-              className="bg-surface border border-border rounded-lg px-2 py-1 text-gray-200"
+              className="bg-black/20 border border-white/10 rounded-lg px-2 py-1 text-gray-200"
             >
               <option value="venice">Venice</option>
               <option value="codex">Codex</option>
@@ -450,8 +468,10 @@ export default function ChatsPage() {
           {messages.map((m) => (
             <div key={m._id} className={`flex flex-col ${m.authorType === 'agent' ? 'items-start' : 'items-end'}`}>
               <div
-                className={`max-w-[70%] px-4 py-2.5 rounded-xl text-sm smooth-transition ${
-                  m.authorType === 'agent' ? 'bg-accent/10 text-gray-200' : 'bg-white/10 text-gray-200'
+                className={`max-w-[75%] px-4 py-2.5 rounded-xl text-sm smooth-transition border ${
+                  m.authorType === 'agent'
+                    ? 'bg-violet-500/10 border-violet-400/20 text-gray-200'
+                    : 'bg-white/10 border-white/10 text-gray-200'
                 }`}
               >
                 <p className="text-xs font-medium text-muted mb-1">
@@ -472,7 +492,7 @@ export default function ChatsPage() {
 
           {streamingText && (
             <div className="flex flex-col items-start">
-              <div className="max-w-[70%] px-4 py-2.5 rounded-xl text-sm bg-accent/10 text-gray-200">
+              <div className="max-w-[75%] px-4 py-2.5 rounded-xl text-sm bg-violet-500/10 border border-violet-400/20 text-gray-200">
                 <p className="text-xs font-medium text-muted mb-1">AvrilAgent · now</p>
                 <div className="chat-markdown whitespace-pre-wrap">{streamingText}</div>
               </div>
@@ -484,19 +504,19 @@ export default function ChatsPage() {
           )}
         </div>
 
-        <form onSubmit={handleSend} className="p-4 border-t border-white/10">
+        <form onSubmit={handleSend} className="p-4 border-t border-white/10 bg-black/10 rounded-b-2xl">
           <div className="flex gap-2">
             <input
               type="text"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1 bg-surface border border-border rounded-xl px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-accent smooth-transition"
+              className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 smooth-transition"
             />
             <Button
               type="submit"
               disabled={sending}
-              className="text-sm disabled:opacity-50"
+              className="text-sm disabled:opacity-50 rounded-xl"
             >
               {sending ? 'Thinking…' : 'Send'}
             </Button>

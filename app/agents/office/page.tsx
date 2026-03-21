@@ -54,7 +54,7 @@ export default function AgentOfficePage() {
       try {
         const res = await fetch(`/api/orchestration/session?sessionId=${encodeURIComponent(sessionId)}`, {
           cache: 'no-store',
-          headers: { 'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc' },
+          credentials: 'include',
         });
         const data = await res.json();
         if (!active) return;
@@ -99,9 +99,9 @@ export default function AgentOfficePage() {
     if (!sessionId || !selectedAgent) return;
     const res = await fetch('/api/orchestration/control', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'x-dashboard-token': 'a41b701b9fad98ced893c3077442327793579085e93520dd45608b463c2849fc',
       },
       body: JSON.stringify({ sessionId, agentKey: selectedAgent.agentKey, command }),
     });

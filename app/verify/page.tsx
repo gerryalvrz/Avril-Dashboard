@@ -12,6 +12,7 @@ import {
   CELOSCAN_REGISTRY_URL,
   type AgentIdentityOnCelo,
 } from '@/src/lib/celo8004';
+import { CELOSCAN_MOTUSNS_REGISTRY_URL, registerAgentNameOnMotusNS } from '@/src/lib/motusns';
 
 function utf8ToHex(message: string) {
   const bytes = new TextEncoder().encode(message);
@@ -27,6 +28,8 @@ export default function VerifyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [ensName, setEnsName] = useState('');
   const [ensStatus, setEnsStatus] = useState('');
+  const [motusNsTxHash, setMotusNsTxHash] = useState<string | null>(null);
+  const [isRegisteringMotusNs, setIsRegisteringMotusNs] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
@@ -125,6 +128,31 @@ export default function VerifyPage() {
     }
   }
 
+  async function handleRegisterMotusNs() {
+    setEnsStatus('');
+    setMotusNsTxHash(null);
+
+    if (!ensName) {
+      setEnsStatus('Type an agent name first.');
+      return;
+    }
+
+    try {
+      setIsRegisteringMotusNs(true);
+      const txHash = await registerAgentNameOnMotusNS({
+        label: ensName,
+        controller: address as `0x${string}` | undefined,
+        metadataURI: process.env.NEXT_PUBLIC_AGENT_REGISTRATION_URI || '',
+      });
+      setMotusNsTxHash(txHash);
+      setEnsStatus(`Submitted on Celo: ${ensName}.motusns.eth`);
+    } catch (err: unknown) {
+      setEnsStatus(err instanceof Error ? err.message : 'MotusNS registration failed.');
+    } finally {
+      setIsRegisteringMotusNs(false);
+    }
+  }
+
   return (
     <div className="font-sans space-y-6">
       <div className="glass-strong p-6 rounded-2xl">
@@ -165,9 +193,9 @@ export default function VerifyPage() {
           </div>
 
           <div className="glass p-6 rounded-2xl">
-            <h3 className="font-semibold font-heading mb-2">ENS Identity</h3>
+            <h3 className="font-semibold font-heading mb-2">MotusNS Identity</h3>
             <p className="text-sm text-muted mb-4">
-              Reserve a place for ENS interactions during verification. Users can move from passport score to buying an ENS name.
+              Register your agent label directly on MotusNS (Celo), instead of opening the ENS app.
             </p>
 
             <label htmlFor="ens-name" className="block text-xs text-muted mb-1">
@@ -182,32 +210,43 @@ export default function VerifyPage() {
                 placeholder="yourname"
                 className="flex-1 bg-surface border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent smooth-transition"
               />
-              <span className="inline-flex items-center px-3 rounded-xl border border-border bg-surface text-sm text-muted">.eth</span>
+              <span className="inline-flex items-center px-3 rounded-xl border border-border bg-surface text-sm text-muted">.motusns.eth</span>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="btn-secondary text-sm"
-                onClick={() => setEnsStatus('Availability check will be connected in the next step.')}
+                className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => void handleRegisterMotusNs()}
+                disabled={isRegisteringMotusNs}
               >
-                Check availability
+                {isRegisteringMotusNs ? 'Registering on Celo…' : 'Register on MotusNS'}
               </button>
               <a
-                href={`https://app.ens.domains/${encodeURIComponent((ensName || 'yourname') + '.eth')}`}
+                href={CELOSCAN_MOTUSNS_REGISTRY_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="btn-primary text-sm"
+                className="btn-secondary text-sm"
               >
-                Buy on ENS App
+                View MotusNS Contract
               </a>
             </div>
 
             <ul className="mt-4 space-y-1 text-xs text-muted">
               <li>- Step 1: type preferred name</li>
-              <li>- Step 2: confirm availability</li>
-              <li>- Step 3: complete purchase in ENS app</li>
+              <li>- Step 2: submit registration tx on Celo</li>
+              <li>- Step 3: track tx on Celoscan</li>
             </ul>
+            {motusNsTxHash ? (
+              <a
+                href={celoscanTxUrl(motusNsTxHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 text-xs text-accent hover:underline block"
+              >
+                View MotusNS registration tx on Celoscan →
+              </a>
+            ) : null}
             {ensStatus ? <p className="mt-3 text-xs text-yellow-300">{ensStatus}</p> : null}
           </div>
         </div>

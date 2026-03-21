@@ -12,11 +12,13 @@ This contract provides ENS-style hierarchical names for agents and subagents:
 
 - Network: `Celo Mainnet` (`chainId: 42220`)
 - `MotusNSRegistry`: `0xb1582d5E49D695C40946656a679a05f5B69aF57c`
+- `MotusNSRegistryNFT`: `0x3a529655e45f2Cc194233b4Ec1BF3Fc0B3C8Fd10`
 - `rootNode` (`namehash("motusns.eth")`): `0xa0066238618987b274e0fdbafdbcdc96244246c247226e150a3c6e564cc5b621`
 
 ## Contract
 
 - `MotusNSRegistry.sol`
+- `MotusNSRegistryNFT.sol` (ERC-721 enabled, wallet-visible names)
 
 ## Permission bits
 
@@ -25,6 +27,16 @@ This contract provides ENS-style hierarchical names for agents and subagents:
 - `PERMIT_SPAWN_SUBAGENT`
 - `PERMIT_GRANT`
 - `PERMIT_REVOKE`
+
+## NFT mode
+
+`MotusNSRegistryNFT` mints one ERC-721 token per registered node:
+
+- `tokenId = uint256(node)`
+- `ownerOf(tokenId) = controller`
+- `tokenURI(tokenId) = metadataURI`
+
+This is the version to use if you want names to appear in wallets/NFT explorers.
 
 ## Celo deployment notes
 

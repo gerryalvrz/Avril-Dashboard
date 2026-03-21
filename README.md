@@ -7,9 +7,14 @@ Control plane for Motus multi-agent operations.
 | Name | Value |
 |------|------|
 | **Network** | Celo mainnet (`chainId: 42220`) |
-| **MotusNSRegistry** | [0xb1582d5E49D695C40946656a679a05f5B69aF57c](https://celoscan.io/address/0xb1582d5E49D695C40946656a679a05f5B69aF57c) |
+| **MotusNSRegistry** | [0xb1582d5E49D695C40946656a679a05f5B69aF57c](https://celoscan.io/address/0xb1582d5E49D695C40946656a679a05f5B69aF57c) (legacy, non-NFT) |
+| **MotusNSRegistryNFT** | [0x3a529655e45f2Cc194233b4Ec1BF3Fc0B3C8Fd10](https://celoscan.io/address/0x3a529655e45f2Cc194233b4Ec1BF3Fc0B3C8Fd10) |
 | **Root label** | `motusns.eth` |
 | **rootNode** | `0xa0066238618987b274e0fdbafdbcdc96244246c247226e150a3c6e564cc5b621` |
+
+For frontend integration, set:
+
+- `NEXT_PUBLIC_MOTUSNS_REGISTRY_ADDRESS=0x3a529655e45f2Cc194233b4Ec1BF3Fc0B3C8Fd10`
 
 ## Stack
 - Next.js + TypeScript

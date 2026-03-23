@@ -19,6 +19,7 @@ import * as React from "react";
 import Folder from "@/components/ui/folder";
 import { FounderWizard, type WizardAnswers } from "@/components/founder/FounderWizard";
 import { useRouter } from "next/navigation";
+import Plan, { type Task } from "@/components/ui/agent-plan";
 
 interface UseAutoResizeTextareaProps {
   minHeight: number;
@@ -121,6 +122,106 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   },
 );
 Textarea.displayName = "Textarea";
+
+const openClawHandoffTasks: Task[] = [
+  {
+    id: "1",
+    title: "Validating Ignition Prompt",
+    description: "Parse and validate the Venice-generated ignition payload",
+    status: "in-progress",
+    priority: "high",
+    level: 0,
+    dependencies: [],
+    subtasks: [
+      {
+        id: "1.1",
+        title: "Extract agent brief from chat",
+        description: "Pull the finalized founder brief from the Venice session",
+        status: "pending",
+        priority: "high",
+        tools: ["venice-session", "chat-parser"],
+      },
+      {
+        id: "1.2",
+        title: "Schema validation (Zod)",
+        description: "Validate ignition payload against the orchestration schema",
+        status: "pending",
+        priority: "high",
+        tools: ["zod-validator"],
+      },
+    ],
+  },
+  {
+    id: "2",
+    title: "Running Swarm Guardrails",
+    description: "3-swarm guardrail check before agent spawn",
+    status: "pending",
+    priority: "high",
+    level: 0,
+    dependencies: [],
+    subtasks: [
+      {
+        id: "2.1",
+        title: "Safety guardrail",
+        description: "Content safety and compliance check on the prompt payload",
+        status: "pending",
+        priority: "high",
+        tools: ["safety-swarm"],
+      },
+      {
+        id: "2.2",
+        title: "Scope guardrail",
+        description: "Verify agent scope stays within MVP boundaries (≤12 agents)",
+        status: "pending",
+        priority: "high",
+        tools: ["scope-swarm"],
+      },
+      {
+        id: "2.3",
+        title: "Resource guardrail",
+        description: "Check token budget and compute allocation limits",
+        status: "pending",
+        priority: "medium",
+        tools: ["resource-swarm"],
+      },
+    ],
+  },
+  {
+    id: "3",
+    title: "Spawning Agent Office",
+    description: "Initialize the OpenClaw session and agent workspace",
+    status: "pending",
+    priority: "high",
+    level: 1,
+    dependencies: ["1", "2"],
+    subtasks: [
+      {
+        id: "3.1",
+        title: "Create office session",
+        description: "Register a new orchestration session with Convex",
+        status: "pending",
+        priority: "high",
+        tools: ["convex-runtime", "session-manager"],
+      },
+      {
+        id: "3.2",
+        title: "Initialize agent swarm",
+        description: "Boot the agent swarm cluster for this session",
+        status: "pending",
+        priority: "high",
+        tools: ["openclaw-runtime", "swarm-scheduler"],
+      },
+      {
+        id: "3.3",
+        title: "Redirect to Office",
+        description: "Navigate to the live agent office view",
+        status: "pending",
+        priority: "medium",
+        tools: ["router"],
+      },
+    ],
+  },
+];
 
 export function AnimatedAIChat() {
   const [value, setValue] = useState("");
@@ -822,47 +923,73 @@ export function AnimatedAIChat() {
 
                 {ignitionReady && chatId ? (
                   <div className="flex flex-col items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3">
-                    <p className="text-xs text-center text-emerald-100/90">
-                      Ignition ready for this chat. Hand off to production OpenClaw (3 swarms, ≤12 agents MVP).
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      <motion.button
-                        type="button"
-                        onClick={() => void handleHandoffToOpenClaw()}
-                        disabled={handoffStarting}
-                        whileTap={{ scale: 0.98 }}
-                        className={cn(
-                          "rounded-lg px-4 py-2 text-xs font-semibold transition-colors",
-                          handoffStarting
-                            ? "bg-white/10 text-white/50"
-                            : "bg-emerald-500 text-white hover:bg-emerald-400",
-                        )}
-                      >
-                        {handoffStarting ? "Sending…" : "Send to OpenClaw"}
-                      </motion.button>
-                      <motion.button
-                        type="button"
-                        onClick={() => router.push(`/chats?chatId=${encodeURIComponent(chatId)}`)}
-                        whileTap={{ scale: 0.98 }}
-                        className="rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-xs text-white/80 hover:bg-white/10"
-                      >
-                        Open Chats panel
-                      </motion.button>
-                      {existingOfficeSessionId ? (
-                        <motion.button
-                          type="button"
-                          onClick={() =>
-                            router.push(
-                              `/agents/office?sessionId=${encodeURIComponent(existingOfficeSessionId)}`,
-                            )
-                          }
-                          whileTap={{ scale: 0.98 }}
-                          className="rounded-lg border border-violet-400/30 bg-violet-500/20 px-3 py-2 text-xs text-violet-100"
+                    <AnimatePresence mode="wait">
+                      {handoffStarting ? (
+                        <motion.div
+                          key="handoff-loader"
+                          className="w-full"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.25 }}
                         >
-                          Open existing office
-                        </motion.button>
-                      ) : null}
-                    </div>
+                          <p className="text-xs text-center text-emerald-200/80 mb-2 font-medium">
+                            Handing off to OpenClaw — running 3-swarm guardrails…
+                          </p>
+                          <Plan
+                            tasks={openClawHandoffTasks}
+                            autoProgress
+                            autoProgressIntervalMs={900}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="handoff-actions"
+                          className="flex flex-col items-center gap-2 w-full"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.25 }}
+                        >
+                          <p className="text-xs text-center text-emerald-100/90">
+                            Ignition ready for this chat. Hand off to production OpenClaw (3 swarms, ≤12 agents MVP).
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <motion.button
+                              type="button"
+                              onClick={() => void handleHandoffToOpenClaw()}
+                              disabled={handoffStarting}
+                              whileTap={{ scale: 0.98 }}
+                              className="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-400"
+                            >
+                              Send to OpenClaw
+                            </motion.button>
+                            <motion.button
+                              type="button"
+                              onClick={() => router.push(`/chats?chatId=${encodeURIComponent(chatId)}`)}
+                              whileTap={{ scale: 0.98 }}
+                              className="rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-xs text-white/80 hover:bg-white/10"
+                            >
+                              Open Chats panel
+                            </motion.button>
+                            {existingOfficeSessionId ? (
+                              <motion.button
+                                type="button"
+                                onClick={() =>
+                                  router.push(
+                                    `/agents/office?sessionId=${encodeURIComponent(existingOfficeSessionId)}`,
+                                  )
+                                }
+                                whileTap={{ scale: 0.98 }}
+                                className="rounded-lg border border-violet-400/30 bg-violet-500/20 px-3 py-2 text-xs text-violet-100"
+                              >
+                                Open existing office
+                              </motion.button>
+                            ) : null}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ) : null}
 

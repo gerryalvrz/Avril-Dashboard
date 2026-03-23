@@ -12,7 +12,7 @@ import {
 import { startOpenClawSessionStream } from '@/src/lib/openclawWsClient';
 import { resolveOpenClawAllowedBridgeUrl, resolveOpenClawBridgeUrl } from '@/src/lib/openclawBridgeEnv';
 
-const DEFAULT_ALLOWED_BRIDGE_URL = 'https://openclaw.app.avril.life/respond';
+const DEFAULT_ALLOWED_BRIDGE_URL = 'https://openclaw.agents.motusdao.org/respond';
 
 const SPAWN_MAX_ATTEMPTS = 3;
 const SPAWN_RETRY_BASE_MS = 4000;

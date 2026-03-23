@@ -228,7 +228,7 @@ export function FounderWizard({ onGenerate, isGenerating = false }: FounderWizar
           <div className="space-y-3 pb-2">
             <h2 className="text-base font-semibold text-white/90">What are you building?</h2>
             <p className="text-xs text-white/45 leading-relaxed">
-              Describe your idea, who it's for, and the pain it solves.
+              {`Describe your idea, who it's for, and the pain it solves.`}
             </p>
             <WInput label="Your idea" value={answers.rawIdea} onChange={(v) => set("rawIdea", v)} placeholder="e.g. AI-powered bookkeeping for freelancers" textarea />
             <WInput label="Problem it solves" value={answers.problem} onChange={(v) => set("problem", v)} placeholder="e.g. Freelancers spend 5+ hrs/wk on invoices" />

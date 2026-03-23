@@ -1,5 +1,9 @@
 const nextConfig = {
   reactStrictMode: true,
+  // Default Next ESLint dirs include `lib/`; vendor contracts have their own .eslintrc (prettier) and break CI.
+  eslint: {
+    dirs: ['app', 'src', 'components', 'convex'],
+  },
   webpack: (config) => {
     config.resolve = config.resolve || {};
     config.resolve.alias = {

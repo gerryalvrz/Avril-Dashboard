@@ -13,6 +13,9 @@ import {
   Workflow,
   CalendarRange,
   Crosshair,
+  Network,
+  Sparkles,
+  Fingerprint,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react";
@@ -657,7 +660,7 @@ export function AnimatedAIChat() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" />
         <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-fuchsia-500/10 rounded-full mix-blend-normal filter blur-[96px] animate-pulse delay-1000" />
       </div>
-      <div className="w-full max-w-2xl mx-auto relative">
+      <div className="w-full max-w-3xl mx-auto relative px-1 sm:px-0">
         <motion.div
           className="relative z-10 space-y-6"
           initial={{ opacity: 0, y: 20 }}
@@ -674,16 +677,67 @@ export function AnimatedAIChat() {
             >
               <Image src="/Avril.png" alt="Avril logo" width={160} height={56} className="opacity-95" priority />
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="inline-block">
-              <h1 className="text-3xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/40 pb-1">
-                What do you want to ship?
-              </h1>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="space-y-4"
+            >
+              <div className="inline-block w-full text-center">
+                <h1 className="font-heading text-2xl sm:text-3xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white/95 via-violet-200/90 to-white/50 pb-1 px-1">
+                  Founder ignition → live agent orchestration
+                </h1>
+                <p className="mt-3 text-sm sm:text-[15px] text-white/50 leading-relaxed max-w-xl mx-auto px-2">
+                  Avril interviews you, saves structured ignition to Convex, then hands off to OpenClaw with swarm guardrails—open{" "}
+                  <span className="text-white/65">Agent Office</span> to watch execution. Sign in with Human.tech; optionally verify with Passport and register an{" "}
+                  <span className="text-white/65">ERC-8004</span> agent on Celo.
+                </p>
+                <motion.div
+                  className="h-px max-w-md mx-auto mt-4 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: "100%", opacity: 1 }}
+                  transition={{ delay: 0.45, duration: 0.75 }}
+                />
+              </div>
+
               <motion.div
-                className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: "100%", opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-              />
+                className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left pt-1"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.5 }}
+              >
+                {[
+                  {
+                    icon: <Network className="w-4 h-4 text-violet-300 shrink-0" aria-hidden />,
+                    title: "Orchestration",
+                    body: "OpenClaw bridge, 3-swarm guardrails, and a hard cap on agents—then jump into the live office for the session.",
+                  },
+                  {
+                    icon: <Sparkles className="w-4 h-4 text-fuchsia-300 shrink-0" aria-hidden />,
+                    title: "Vibe founding",
+                    body: "Wizard, folder briefs, and Venice chat capture your story; when ignition is ready, one tap sends it to production runtime.",
+                  },
+                  {
+                    icon: <Fingerprint className="w-4 h-4 text-emerald-300/90 shrink-0" aria-hidden />,
+                    title: "Identity",
+                    body: "Wallet-native Human.tech sessions, optional Passport scores, and onchain ERC-8004 agent registration on Celo.",
+                  },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.title}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.42 + i * 0.06, duration: 0.4 }}
+                    className="rounded-xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm px-3 py-3 sm:py-3.5"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {item.icon}
+                      <span className="text-xs font-semibold text-white/90 tracking-tight">{item.title}</span>
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-white/45 leading-snug">{item.body}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
             </motion.div>
           </div>
 
@@ -712,7 +766,7 @@ export function AnimatedAIChat() {
               </motion.div>
 
               <div className="flex flex-col items-center justify-center gap-3">
-                <p className="text-xs text-white/40">Quick start — tap a card for an instant agent brief</p>
+                <p className="text-xs text-white/40">Quick start — tap a posture card for an instant Agent brief</p>
                 <div className="relative flex h-[220px] w-full flex-col items-center justify-center gap-2">
                   <Folder
                     color="#5227FF"
@@ -762,7 +816,9 @@ export function AnimatedAIChat() {
 
                 <div ref={scrollRef} className="max-h-64 overflow-y-auto space-y-2 px-1">
                   {messages.length === 0 ? (
-                    <p className="text-center text-sm text-white/45">Start an agentic startup vibe-founding all the way.</p>
+                    <p className="text-center text-sm text-white/45 px-2">
+                      Tell Avril what you are building—structured ignition syncs to Convex; when you are ready, hand off to OpenClaw and open Agent Office.
+                    </p>
                   ) : (
                     messages.map((message) => (
                       <div
@@ -1018,7 +1074,7 @@ export function AnimatedAIChat() {
 
                 {/* ── Fast Ideas Folder (in chat view) ── */}
                 <div className="flex flex-col items-center justify-center gap-3 pt-2">
-                  <p className="text-xs text-white/40">Quick start — tap a card for an instant agent brief</p>
+                  <p className="text-xs text-white/40">Quick start — tap a posture card for an instant Agent brief</p>
                   <div className="relative flex h-[220px] w-full flex-col items-center justify-center gap-2">
                     <Folder
                       color="#5227FF"

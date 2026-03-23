@@ -6,6 +6,7 @@ import OfficeWorld2D from '@/src/components/office/OfficeWorld2D';
 import OfficeLegend from '@/src/components/office/OfficeLegend';
 import SessionTimeline from '@/src/components/office/SessionTimeline';
 import OfficeAgentChat from '@/src/components/office/OfficeAgentChat';
+import { div } from 'framer-motion/client';
 
 const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN ?? '';
 
@@ -136,12 +137,7 @@ export default function AgentOfficePage() {
           <p className="text-xs text-muted mt-1">Session: {sessionId || '—'}</p>
         </div>
         {session && (
-          <div className="glass px-3 py-2 rounded-xl text-xs min-w-[260px]">
-            <p className="text-white">Status: {session.status}</p>
-            <p className="text-muted">VPS: {session.vpsRef || '—'}</p>
-            <p className="text-muted">Container: {session.containerRef || '—'}</p>
-            {session.error && <p className="text-rose-300 mt-1">{session.error}</p>}
-          </div>
+          <div></div>
         )}
       </div>
 
@@ -177,11 +173,10 @@ export default function AgentOfficePage() {
                 <button
                   type="button"
                   onClick={() => setShowChat((v) => !v)}
-                  className={`text-xs px-3 py-1 rounded-lg transition-colors ${
-                    showChat
+                  className={`text-xs px-3 py-1 rounded-lg transition-colors ${showChat
                       ? 'bg-accent/20 text-accent ring-1 ring-accent/30'
                       : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
-                  }`}
+                    }`}
                 >
                   {showChat ? 'Hide Chat' : 'Chat'}
                 </button>

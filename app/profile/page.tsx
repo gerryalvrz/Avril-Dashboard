@@ -6,6 +6,7 @@ import ThemeToggle from '@/src/components/ThemeToggle';
 import MatrixColorSelector from '@/src/components/MatrixColorSelector';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
+import VerificationSection from '@/src/components/profile/VerificationSection';
 
 export default function ProfilePage() {
   const { address } = useWaaP();
@@ -35,10 +36,8 @@ export default function ProfilePage() {
             </div>
             <div className="rounded-xl bg-black/40 border border-white/10 p-4">
               <div className="text-xs text-muted mb-1">Human verification</div>
-              <div className="text-sm">
-                <Link href="/verify" className="text-accent hover:underline">
-                  View / manage verification →
-                </Link>
+              <div className="text-sm text-soft-white">
+                Manage your humanity stamps below
               </div>
             </div>
           </div>
@@ -96,6 +95,9 @@ export default function ProfilePage() {
           </Link>
         </div>
       </Card>
+
+      <SectionTitle title="Verification & Identity" subtitle="Manage your Human Passport and decentralized identities." />
+      <VerificationSection />
     </div>
   );
 }

@@ -21,15 +21,15 @@ const NAV_BASE: Array<{
   color: GlassIconItem['color'];
   icon: ReactNode;
 }> = [
-  { href: '/home', label: 'Home', color: 'cyan', icon: <Home className="w-5 h-5 text-white" /> },
-  { href: '/profile', label: 'Profile', color: 'cyan', icon: <UserRound className="w-5 h-5 text-white" /> },
-  { href: '/verify', label: 'Verify', color: 'cyan', icon: <BadgeCheck className="w-5 h-5 text-white" /> },
-  { href: '/agents', label: 'Agents', color: 'cyan', icon: <Bot className="w-5 h-5 text-white" /> },
-  { href: '/agents/office', label: 'Office', color: 'cyan', icon: <Building2 className="w-5 h-5 text-white" /> },
-  { href: '/tasks', label: 'Tasks', color: 'cyan', icon: <ClipboardList className="w-5 h-5 text-white" /> },
-  { href: '/chats', label: 'Chats', color: 'cyan', icon: <MessageSquare className="w-5 h-5 text-white" /> },
-  { href: '/wallets', label: 'Wallets', color: 'cyan', icon: <Wallet className="w-5 h-5 text-white" /> },
-];
+    { href: '/home', label: 'Home', color: 'cyan', icon: <Home className="w-5 h-5 text-white" /> },
+    { href: '/profile', label: 'Profile', color: 'cyan', icon: <UserRound className="w-5 h-5 text-white" /> },
+    /* { href: '/verify', label: 'Verify', color: 'cyan', icon: <BadgeCheck className="w-5 h-5 text-white" /> }, */
+    /**/
+    { href: '/agents/office', label: 'Office', color: 'cyan', icon: <Building2 className="w-5 h-5 text-white" /> },
+    /*{ href: '/tasks', label: 'Tasks', color: 'cyan', icon: <ClipboardList className="w-5 h-5 text-white" /> }, */
+    { href: '/chats', label: 'Chats', color: 'cyan', icon: <MessageSquare className="w-5 h-5 text-white" /> },
+    { href: '/wallets', label: 'Wallets', color: 'cyan', icon: <Wallet className="w-5 h-5 text-white" /> },
+  ];
 
 function isNavActive(pathname: string, href: string) {
   if (href === '/agents') {

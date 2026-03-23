@@ -13,6 +13,7 @@ const TITLES: Record<string, string> = {
   '/tasks': 'Tasks',
   '/chats': 'Chats',
   '/wallets': 'Wallets',
+  '/startup-agent-generator': 'Startup Agent Generator',
   '/profile': 'Profile',
 };
 

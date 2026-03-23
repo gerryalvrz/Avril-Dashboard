@@ -6,6 +6,7 @@ import Badge from '@/src/components/ui/Badge';
 import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
+import AgenticWalletLayerPanel from '@/src/components/AgenticWalletLayerPanel';
 
 type Agent = {
   _id: string;
@@ -72,6 +73,9 @@ export default function AgentsPage() {
         <Link href="/chats">
           <Button className="text-sm">New chat (creates worker)</Button>
         </Link>
+      </div>
+      <div className="mb-4">
+        <AgenticWalletLayerPanel compact />
       </div>
 
       {error && (

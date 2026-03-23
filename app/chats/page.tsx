@@ -16,6 +16,7 @@ import {
 import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
+import AgenticWalletLayerPanel from '@/src/components/AgenticWalletLayerPanel';
 import { FounderChatStepper } from '@/components/founder/FounderChatStepper';
 
 const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN ?? '';
@@ -476,6 +477,7 @@ export default function ChatsPage() {
       </div>
       <div className="relative z-10 space-y-4">
         <SectionTitle title="Chats" subtitle="Threaded conversations with Avril agents and models." />
+        <AgenticWalletLayerPanel compact />
       </div>
       <div className="relative z-10 flex gap-4 h-[calc(100vh-11rem)]">
       <Card className="w-80 overflow-y-auto flex-shrink-0 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-2xl shadow-2xl">

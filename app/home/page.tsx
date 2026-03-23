@@ -10,6 +10,7 @@ import { FounderIntakeSchema } from '@/src/modules/founder/schemas';
 import { mergeCapturedIntoIntakeForm } from '@/src/modules/founder/mergeCapturedIntoIntakeForm';
 import { useWaaP } from '@/src/components/WaaPProvider';
 import { AnimatedAIChat } from '@/components/ui/animated-ai-chat';
+import AgenticWalletLayerPanel from '@/src/components/AgenticWalletLayerPanel';
 
 const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN ?? '';
 
@@ -312,6 +313,7 @@ function HomePageContent() {
   return (
     <div className="font-sans space-y-5">
       <AnimatedAIChat />
+      <AgenticWalletLayerPanel compact />
 
       <div className="mx-auto w-full max-w-6xl px-2">
         <div className="flex items-center justify-between gap-3 mb-3">

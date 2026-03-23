@@ -5,6 +5,7 @@ import { useWaaP } from '@/src/components/WaaPProvider';
 import Badge from '@/src/components/ui/Badge';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
+import AgenticWalletLayerPanel from '@/src/components/AgenticWalletLayerPanel';
 
 type ControlState = {
   pendingApprovals?: Array<{
@@ -76,6 +77,7 @@ export default function WalletsPage() {
   return (
     <div className="font-sans space-y-8">
       <SectionTitle title="Identity and Approvals" subtitle="Session identity, Human verification, and live approval posture." />
+      <AgenticWalletLayerPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         <Card className="p-6 lg:col-span-2 space-y-4">

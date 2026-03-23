@@ -7,6 +7,7 @@ import {
   type StartupRoleInput,
   type StartupRoleTemplate,
 } from '@/src/lib/startupAgentGenerator';
+import AgenticWalletLayerPanel from '@/src/components/AgenticWalletLayerPanel';
 
 type MatrixRow = {
   role: string;
@@ -127,6 +128,7 @@ export default function StartupAgentGeneratorPage() {
 
   return (
     <div className="font-sans space-y-6">
+      <AgenticWalletLayerPanel />
       <div className="glass-strong p-6 rounded-2xl">
         <h2 className="modern-typography-medium gradient-text mb-2">Startup Agent Generator</h2>
         <p className="text-sm text-muted mb-4">

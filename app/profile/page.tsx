@@ -7,6 +7,7 @@ import MatrixColorSelector from '@/src/components/MatrixColorSelector';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
 import VerificationSection from '@/src/components/profile/VerificationSection';
+import AgenticWalletLayerPanel from '@/src/components/AgenticWalletLayerPanel';
 
 export default function ProfilePage() {
   const { address } = useWaaP();
@@ -73,6 +74,8 @@ export default function ProfilePage() {
           </ul>
         </Card>
       </div>
+
+      <AgenticWalletLayerPanel compact />
 
       <Card className="p-6">
         <h3 className="font-semibold font-heading mb-3">Activity overview</h3>

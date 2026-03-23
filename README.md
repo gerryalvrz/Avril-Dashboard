@@ -34,6 +34,8 @@ This README summarizes what we shipped for the hackathon and lists **verifiable 
 - [`docs/OPENCLAW_BRIDGE.md`](docs/OPENCLAW_BRIDGE.md) — run the bridge locally, tunnels, `OPENCLAW_BRIDGE_URL` / dev override.
 - [`docs/VENICE_OPENCLAW_HANDOFF_CHECKLIST.md`](docs/VENICE_OPENCLAW_HANDOFF_CHECKLIST.md) — handoff and guardrails checklist.
 - [`docs/FULL_DEMO_CHECKLIST.md`](docs/FULL_DEMO_CHECKLIST.md) — end-to-end demo story.
+- [`docs/STARTUP_AGENT_GENERATOR.md`](docs/STARTUP_AGENT_GENERATOR.md) — startup swarm generation flow, policies, and safety model.
+- [`docs/ENS_SUBDOMAIN_AUTOMATION.md`](docs/ENS_SUBDOMAIN_AUTOMATION.md) — ENS subdomain payload/execution path under `prism-protocol.eth`.
 
 ---
 
@@ -127,6 +129,39 @@ Verifiable activity we reference for this submission:
 | Human Passport | [developer.passport.xyz](https://developer.passport.xyz/) |
 | Human.tech wallet | [docs.wallet.human.tech](https://docs.wallet.human.tech/guides/start) |
 | ERC-8004 spec | [EIP-8004](https://eips.ethereum.org/EIPS/eip-8004), [8004.org](https://www.8004.org) |
+
+---
+
+## Startup Agent Generator
+
+Generate startup AI swarms with human-root controls, role delegates, context wallets, ENS subdomain assignment payloads, optional ERC-8004 registration, and audit artifacts.
+
+### Quickstart
+
+1. Configure root credentials in host-secure storage (`~/.config/prism/keys`) or `PRISM_ROOT_PRIVATE_KEY`.
+2. Optionally configure onchain addresses for live tx execution:
+   - `PRISM_FACTORY_ADDRESS`
+   - `PRISM_CONTEXT_ADDRESS`
+   - `ENS_REGISTRY_ADDRESS`
+3. Run:
+
+```bash
+./scripts/startup-agent-generator.sh "acme-robotics" '[{"role":"ceo-agent","policy":{"spendingLimit":"10000000000000000","dailyLimit":"30000000000000000","ttl":172800,"allowlist":[]}},{"role":"sales-agent","policy":{"spendingLimit":"5000000000000000","dailyLimit":"15000000000000000","ttl":86400,"allowlist":[]}},{"role":"support-agent","policy":{"spendingLimit":"1000000000000000","dailyLimit":"5000000000000000","ttl":86400,"allowlist":[]}}]'
+```
+
+Artifacts are written to:
+
+- `agent/startup_swarm_<startup>.json`
+
+Interactive UI:
+
+- `/startup-agent-generator`
+
+### Safety constraints
+
+- Never commit private keys.
+- Keys are written only to `~/.config/prism/keys` (or `PRISM_KEYS_DIR`).
+- Every generated context includes explicit revoke instructions.
 
 ---
 

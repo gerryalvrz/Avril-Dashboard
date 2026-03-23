@@ -1,0 +1,260 @@
+{
+  "kind": "startup-agent-swarm",
+  "startup": "acme-robotics",
+  "generatedAt": "2026-03-23T06:46:40.561Z",
+  "chainId": 42220,
+  "rpcUrl": "https://forno.celo.org",
+  "rootWallet": "0x68a55fC06Dd22b46D15220606dC6A2CaB25D7784",
+  "prismFactoryAddress": null,
+  "prismContextAddress": null,
+  "ensRegistryAddress": null,
+  "roles": [
+    {
+      "role": "ceo-agent",
+      "delegateEoa": "0x320793ABaf2b263E7a38f29a2AEff11020bF0c99",
+      "delegateKeyPath": "/Users/main/.config/prism/keys/acme-robotics-ceo-agent.json",
+      "contextWallet": "0x879ABcde76BC13B6Dfcf70655e0188ED5E80A8FE",
+      "policy": {
+        "spendingLimit": "10000000000000000",
+        "dailyLimit": "30000000000000000",
+        "ttl": 172800,
+        "allowlist": []
+      },
+      "txs": [
+        {
+          "ok": true,
+          "label": "ceo-agent:context:create",
+          "txHash": null,
+          "contextAddress": "0x879ABcde76BC13B6Dfcf70655e0188ED5E80A8FE",
+          "simulated": true
+        },
+        {
+          "ok": false,
+          "label": "ceo-agent:delegate:fund",
+          "errorType": "insufficient_funds",
+          "errorMessage": "insufficient funds"
+        },
+        {
+          "ok": true,
+          "label": "ceo-agent:context:execute",
+          "txHash": null,
+          "simulated": true
+        },
+        {
+          "ok": true,
+          "label": "ceo-agent:context:revoke",
+          "txHash": null,
+          "simulated": true
+        }
+      ],
+      "ens": {
+        "payload": {
+          "registry": null,
+          "parentNode": "0xc2d1004fffacec69b907b2be7effdbd239b5ab47fd7c8068573054d0cc66df63",
+          "labelHash": "0x28a5ea975ff367a6a1ed4ab3f10a0fdc864faf5242940839109caf0ee2ee541c",
+          "owner": "0x879ABcde76BC13B6Dfcf70655e0188ED5E80A8FE",
+          "resolver": "0x0000000000000000000000000000000000000000",
+          "ttl": 300,
+          "fullName": "ceo-agent.acme-robotics.prism-protocol.eth",
+          "fallback": "ceo-agent.prism-protocol.eth"
+        },
+        "result": {
+          "ok": true,
+          "label": "ceo-agent:ens:assign",
+          "txHash": null,
+          "simulated": true,
+          "assignedName": "ceo-agent.acme-robotics.prism-protocol.eth"
+        }
+      },
+      "erc8004": {
+        "requested": false,
+        "result": null
+      },
+      "revokeInstructions": "Use PrismContext.revokeDelegate(0x320793ABaf2b263E7a38f29a2AEff11020bF0c99) from root 0x68a55fC06Dd22b46D15220606dC6A2CaB25D7784."
+    },
+    {
+      "role": "sales-agent",
+      "delegateEoa": "0x2694b41C3E411bD5799a950803473e984ca51091",
+      "delegateKeyPath": "/Users/main/.config/prism/keys/acme-robotics-sales-agent.json",
+      "contextWallet": "0x38e01Ba85acB9873ebD0574806b2301c1C71991A",
+      "policy": {
+        "spendingLimit": "5000000000000000",
+        "dailyLimit": "15000000000000000",
+        "ttl": 86400,
+        "allowlist": []
+      },
+      "txs": [
+        {
+          "ok": true,
+          "label": "sales-agent:context:create",
+          "txHash": null,
+          "contextAddress": "0x38e01Ba85acB9873ebD0574806b2301c1C71991A",
+          "simulated": true
+        },
+        {
+          "ok": false,
+          "label": "sales-agent:delegate:fund",
+          "errorType": "insufficient_funds",
+          "errorMessage": "insufficient funds"
+        },
+        {
+          "ok": true,
+          "label": "sales-agent:context:execute",
+          "txHash": null,
+          "simulated": true
+        },
+        {
+          "ok": true,
+          "label": "sales-agent:context:revoke",
+          "txHash": null,
+          "simulated": true
+        }
+      ],
+      "ens": {
+        "payload": {
+          "registry": null,
+          "parentNode": "0xc2d1004fffacec69b907b2be7effdbd239b5ab47fd7c8068573054d0cc66df63",
+          "labelHash": "0xbb26d48f300e4bb6d2dc16c338ffe47897bcb675bd7dc8ef80598e684921b536",
+          "owner": "0x38e01Ba85acB9873ebD0574806b2301c1C71991A",
+          "resolver": "0x0000000000000000000000000000000000000000",
+          "ttl": 300,
+          "fullName": "sales-agent.acme-robotics.prism-protocol.eth",
+          "fallback": "sales-agent.prism-protocol.eth"
+        },
+        "result": {
+          "ok": true,
+          "label": "sales-agent:ens:assign",
+          "txHash": null,
+          "simulated": true,
+          "assignedName": "sales-agent.acme-robotics.prism-protocol.eth"
+        }
+      },
+      "erc8004": {
+        "requested": false,
+        "result": null
+      },
+      "revokeInstructions": "Use PrismContext.revokeDelegate(0x2694b41C3E411bD5799a950803473e984ca51091) from root 0x68a55fC06Dd22b46D15220606dC6A2CaB25D7784."
+    },
+    {
+      "role": "support-agent",
+      "delegateEoa": "0x97dC8Ce0E1DFE65Ed6BF710A5509A14E241b8372",
+      "delegateKeyPath": "/Users/main/.config/prism/keys/acme-robotics-support-agent.json",
+      "contextWallet": "0x2b38Ab1638955F95e35795b687B133a414DD7E54",
+      "policy": {
+        "spendingLimit": "1000000000000000",
+        "dailyLimit": "5000000000000000",
+        "ttl": 86400,
+        "allowlist": []
+      },
+      "txs": [
+        {
+          "ok": true,
+          "label": "support-agent:context:create",
+          "txHash": null,
+          "contextAddress": "0x2b38Ab1638955F95e35795b687B133a414DD7E54",
+          "simulated": true
+        },
+        {
+          "ok": false,
+          "label": "support-agent:delegate:fund",
+          "errorType": "insufficient_funds",
+          "errorMessage": "insufficient funds"
+        },
+        {
+          "ok": true,
+          "label": "support-agent:context:execute",
+          "txHash": null,
+          "simulated": true
+        },
+        {
+          "ok": true,
+          "label": "support-agent:context:revoke",
+          "txHash": null,
+          "simulated": true
+        }
+      ],
+      "ens": {
+        "payload": {
+          "registry": null,
+          "parentNode": "0xc2d1004fffacec69b907b2be7effdbd239b5ab47fd7c8068573054d0cc66df63",
+          "labelHash": "0x57879573168f6927c32e6fba48daa065ab688f612d8c39e96a00f42b8d3faff1",
+          "owner": "0x2b38Ab1638955F95e35795b687B133a414DD7E54",
+          "resolver": "0x0000000000000000000000000000000000000000",
+          "ttl": 300,
+          "fullName": "support-agent.acme-robotics.prism-protocol.eth",
+          "fallback": "support-agent.prism-protocol.eth"
+        },
+        "result": {
+          "ok": true,
+          "label": "support-agent:ens:assign",
+          "txHash": null,
+          "simulated": true,
+          "assignedName": "support-agent.acme-robotics.prism-protocol.eth"
+        }
+      },
+      "erc8004": {
+        "requested": false,
+        "result": null
+      },
+      "revokeInstructions": "Use PrismContext.revokeDelegate(0x97dC8Ce0E1DFE65Ed6BF710A5509A14E241b8372) from root 0x68a55fC06Dd22b46D15220606dC6A2CaB25D7784."
+    }
+  ],
+  "roleMatrix": [
+    {
+      "role": "ceo-agent",
+      "delegateEoa": "0x320793ABaf2b263E7a38f29a2AEff11020bF0c99",
+      "contextWallet": "0x879ABcde76BC13B6Dfcf70655e0188ED5E80A8FE",
+      "ens": "ceo-agent.acme-robotics.prism-protocol.eth",
+      "erc8004": "skipped",
+      "txHashes": {
+        "ceo-agent:context:create": null,
+        "ceo-agent:delegate:fund": null,
+        "ceo-agent:context:execute": null,
+        "ceo-agent:context:revoke": null,
+        "ens": null,
+        "erc8004": null
+      }
+    },
+    {
+      "role": "sales-agent",
+      "delegateEoa": "0x2694b41C3E411bD5799a950803473e984ca51091",
+      "contextWallet": "0x38e01Ba85acB9873ebD0574806b2301c1C71991A",
+      "ens": "sales-agent.acme-robotics.prism-protocol.eth",
+      "erc8004": "skipped",
+      "txHashes": {
+        "sales-agent:context:create": null,
+        "sales-agent:delegate:fund": null,
+        "sales-agent:context:execute": null,
+        "sales-agent:context:revoke": null,
+        "ens": null,
+        "erc8004": null
+      }
+    },
+    {
+      "role": "support-agent",
+      "delegateEoa": "0x97dC8Ce0E1DFE65Ed6BF710A5509A14E241b8372",
+      "contextWallet": "0x2b38Ab1638955F95e35795b687B133a414DD7E54",
+      "ens": "support-agent.acme-robotics.prism-protocol.eth",
+      "erc8004": "skipped",
+      "txHashes": {
+        "support-agent:context:create": null,
+        "support-agent:delegate:fund": null,
+        "support-agent:context:execute": null,
+        "support-agent:context:revoke": null,
+        "ens": null,
+        "erc8004": null
+      }
+    }
+  ],
+  "safety": {
+    "privateKeysStoredInRepo": false,
+    "keyStoragePath": "/Users/main/.config/prism/keys",
+    "deterministicPolicyInput": true
+  },
+  "checklist": {
+    "minThreeAgentsGenerated": true,
+    "hasExecute": true,
+    "hasRevoke": true,
+    "roleMatrixPresent": true
+  }
+}

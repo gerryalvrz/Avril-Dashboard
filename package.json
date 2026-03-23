@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:happy-path": "node ./script/happy-path-check.mjs",
     "diagnose:openclaw": "node ./script/openclaw-diagnostic.mjs",
-    "openclaw:bridge": "node bridge/openclaw-bridge.mjs"
+    "openclaw:bridge": "node bridge/openclaw-bridge.mjs",
+    "startup-agent:generate": "node ./script/startup-agent-generator.mjs"
   },
   "dependencies": {
     "@human.tech/passport-embed": "^0.3.4",

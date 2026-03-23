@@ -2,13 +2,13 @@ import { NextRequest } from 'next/server';
 
 /**
  * Serves the ERC-8004 agent registration JSON.
- * Use this URL as NEXT_PUBLIC_AGENT_REGISTRATION_URI (e.g. https://agents.avril-dashboard.app/agent-registration.json).
+ * Use this URL as NEXT_PUBLIC_AGENT_REGISTRATION_URI (e.g. https://app.avril.life/agent-registration.json).
  */
 export async function GET(request: NextRequest) {
   const base =
     process.env.NEXT_PUBLIC_APP_URL ||
     request.nextUrl.origin ||
-    'https://agents.avril-dashboard.app';
+    'https://app.avril.life';
 
   const body = {
     type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',

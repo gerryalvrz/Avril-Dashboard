@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getClientIp, hitRateLimit, rejectLargePayload, requireDashboardToken } from '@/src/lib/apiSecurity';
-import { listChats, listMessages, sendMessage, sendAgentMessage } from '@/src/lib/convexServer';
+import {
+  getDefaultOrganizationId,
+  listChats,
+  listMessages,
+  sendMessage,
+  sendAgentMessage,
+  upsertChatIgnitionDraft,
+} from '@/src/lib/convexServer';
+import { formatBridgeFetchError, resolveOpenClawBridgeUrl } from '@/src/lib/openclawBridgeEnv';
+import {
+  augmentUserMessageForModel,
+  buildAvrilUnifiedSystemPrompt,
+} from '@/src/modules/avril/buildAvrilSystemPrompt';
+import { parseAvrilAssistantReply } from '@/src/modules/avril/parseAvrilAssistantReply';
+import { extractDraftFromArchitectPayload } from '@/src/modules/avril/extractDraftFromArchitectPayload';
+import { isFolderAgentBriefMessage } from '@/src/lib/orchestrationSwarmGuardrails';
 
 /** Max number of recent messages to send to the bridge as per-agent context. */
 const BRIDGE_CONTEXT_LAST_N = 20;
@@ -10,6 +25,11 @@ const BRIDGE_CONTEXT_LAST_N_WHEN_SUMMARY = 10;
 const BRIDGE_CONTEXT_MAX_CONTENT_CHARS = 600;
 /** Suggested max total context size (chars) for the bridge; bridge may truncate further. */
 const BRIDGE_CONTEXT_MAX_CHARS = 12_000;
+/** Short chat turns (intake, commands). */
+const MAX_CHAT_MESSAGE_CHARS = 4_000;
+/** Folder-card “Agent brief” can be long markdown. */
+const MAX_AGENT_BRIEF_CHARS = 56 * 1024;
+const RESPOND_MAX_BODY_BYTES = 128 * 1024;
 
 type RequestBody = {
   chatId: string;
@@ -66,6 +86,8 @@ type BridgeInput = {
   summary?: string;
   messages?: Array<{ authorType: string; authorId: string; content: string; createdAt: string }>;
   maxContextChars?: number;
+  /** Full Avril architect system prompt (shared Venice + OpenClaw). */
+  systemPrompt?: string;
 };
 
 type VeniceResult =
@@ -73,11 +95,11 @@ type VeniceResult =
   | { ok: false; code: 'VENICE_TIMEOUT' | 'VENICE_ERROR'; message: string; retryable: boolean };
 
 function buildVeniceMessages(input: BridgeInput): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
-  const systemParts = [
-    'You are AvrilAgent, an autonomous assistant for Avril Dashboard.',
-    input.area ? `Primary area: ${input.area}.` : null,
-    input.subArea ? `Sub-area: ${input.subArea}.` : null,
-  ].filter(Boolean);
+  const base = input.systemPrompt?.trim() || buildAvrilUnifiedSystemPrompt();
+  const meta = [input.area && `Primary area: ${input.area}.`, input.subArea && `Sub-area: ${input.subArea}.`]
+    .filter(Boolean)
+    .join(' ');
+  const systemMain = meta ? `${base}\n\n${meta}` : base;
 
   const fromContext =
     input.messages?.map((msg) => ({
@@ -86,10 +108,10 @@ function buildVeniceMessages(input: BridgeInput): Array<{ role: 'system' | 'user
     })) ?? [];
 
   return [
-    { role: 'system', content: systemParts.join(' ') },
+    { role: 'system', content: systemMain },
     ...(input.summary ? [{ role: 'system' as const, content: `Conversation summary: ${input.summary}` }] : []),
     ...fromContext,
-    { role: 'user', content: input.message },
+    { role: 'user', content: augmentUserMessageForModel(input.message) },
   ];
 }
 
@@ -131,7 +153,7 @@ async function callVeniceInference(input: BridgeInput): Promise<VeniceResult> {
         body: JSON.stringify({
           model: veniceModel,
           messages: buildVeniceMessages(input),
-          temperature: 0.6,
+          temperature: 0.45,
         }),
         cache: 'no-store',
         signal: controller.signal,
@@ -197,14 +219,15 @@ async function callVeniceInference(input: BridgeInput): Promise<VeniceResult> {
 }
 
 async function callOpenClawBridge(input: BridgeInput): Promise<BridgeResult> {
-  const bridgeUrl = process.env.OPENCLAW_BRIDGE_URL;
+  const bridgeUrl = resolveOpenClawBridgeUrl();
   const bridgeToken = process.env.OPENCLAW_BRIDGE_TOKEN;
 
   if (!bridgeUrl || !bridgeToken) {
     return {
       ok: false,
       code: 'BRIDGE_ERROR',
-      message: 'Bridge is not configured. Missing OPENCLAW_BRIDGE_URL or OPENCLAW_BRIDGE_TOKEN.',
+      message:
+        'Bridge is not configured. Set OPENCLAW_BRIDGE_URL and OPENCLAW_BRIDGE_TOKEN (or for `next dev` only: OPENCLAW_BRIDGE_URL_DEV=http://127.0.0.1:8787/respond plus the same token).',
       attempts: 0,
       retryable: false,
     };
@@ -225,10 +248,11 @@ async function callOpenClawBridge(input: BridgeInput): Promise<BridgeResult> {
           Authorization: `Bearer ${bridgeToken}`,
         },
         body: JSON.stringify({
-          message: input.message,
+          message: augmentUserMessageForModel(input.message),
           model: input.model ?? 'codex',
           source: 'avril-dashboard',
           chatId: input.chatId,
+          systemPrompt: input.systemPrompt?.trim() || buildAvrilUnifiedSystemPrompt(),
           ...(input.agentId !== undefined && { agentId: input.agentId }),
           ...(input.area !== undefined && { area: input.area }),
           ...(input.subArea !== undefined && { subArea: input.subArea }),
@@ -288,7 +312,9 @@ async function callOpenClawBridge(input: BridgeInput): Promise<BridgeResult> {
       lastError = {
         ok: false,
         code: isAbort ? 'BRIDGE_TIMEOUT' : 'BRIDGE_ERROR',
-        message: isAbort ? 'Bridge request timed out after 12s.' : err instanceof Error ? err.message : 'Bridge request failed.',
+        message: isAbort
+          ? 'Bridge request timed out after 60s.'
+          : formatBridgeFetchError(err, bridgeUrl),
         attempts: attempt,
         retryable: true,
       };
@@ -319,7 +345,7 @@ export async function POST(req: Request) {
       return errorResponse(429, 'RATE_LIMITED', 'Rate limit exceeded', { retryable: true });
     }
 
-    if (rejectLargePayload(req, 8 * 1024)) {
+    if (rejectLargePayload(req, RESPOND_MAX_BODY_BYTES)) {
       return errorResponse(413, 'PAYLOAD_TOO_LARGE', 'Payload too large');
     }
 
@@ -337,8 +363,15 @@ export async function POST(req: Request) {
       return errorResponse(400, 'BAD_REQUEST', 'chatId and message are required.');
     }
 
-    if (message.length > 1200) {
-      return errorResponse(400, 'BAD_REQUEST', 'Message too long (max 1200 chars).');
+    if (message.length > MAX_AGENT_BRIEF_CHARS) {
+      return errorResponse(400, 'BAD_REQUEST', `Message too long (max ${MAX_AGENT_BRIEF_CHARS} chars).`);
+    }
+    if (message.length > MAX_CHAT_MESSAGE_CHARS && !isFolderAgentBriefMessage(message)) {
+      return errorResponse(
+        400,
+        'BAD_REQUEST',
+        `Message too long for a normal turn (max ${MAX_CHAT_MESSAGE_CHARS} chars). Use the folder “Agent brief” flow or shorten the text.`
+      );
     }
 
     let existingChats: any[];
@@ -394,6 +427,7 @@ export async function POST(req: Request) {
       // Proceed without context if listing fails
     }
 
+    const architectPrompt = buildAvrilUnifiedSystemPrompt();
     const input: BridgeInput = {
       chatId,
       message,
@@ -401,6 +435,7 @@ export async function POST(req: Request) {
       agentId,
       area,
       subArea,
+      systemPrompt: architectPrompt,
       ...(hasSummary && currentChat?.summary && { summary: currentChat.summary.trim() }),
       messages: contextMessages.length > 0 ? contextMessages : undefined,
       maxContextChars: BRIDGE_CONTEXT_MAX_CHARS,
@@ -416,8 +451,10 @@ export async function POST(req: Request) {
       });
     }
 
+    const { displayText, architectPayload } = parseAvrilAssistantReply(result.text);
+
     try {
-      await sendAgentMessage({ chatId, content: result.text, authorId: 'AvrilAgent' });
+      await sendAgentMessage({ chatId, content: displayText, authorId: 'AvrilAgent' });
     } catch (err) {
       return errorResponse(502, 'CONVEX_ERROR', 'Agent reply received but failed to persist.', {
         retryable: true,
@@ -425,7 +462,61 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ ok: true, reply: result.text });
+    let ignitionReady = false;
+    if (architectPayload !== null) {
+      const extracted = extractDraftFromArchitectPayload(architectPayload);
+      if (extracted) {
+        ignitionReady = extracted.nextStatus === 'ready';
+        try {
+          const organizationId = body.organizationId?.trim() || (await getDefaultOrganizationId());
+          await upsertChatIgnitionDraft({
+            organizationId,
+            chatId,
+            phase: extracted.phase,
+            captured: extracted.captured,
+            ignitionPrompt: extracted.ignitionPrompt,
+            handoffPayload: extracted.handoffPayload,
+            lastArchitectPayload: architectPayload,
+            nextStatus: extracted.nextStatus,
+          });
+        } catch {
+          /* draft persistence must not break chat */
+        }
+      }
+    }
+
+    if (isFolderAgentBriefMessage(message)) {
+      try {
+        const organizationId = body.organizationId?.trim() || (await getDefaultOrganizationId());
+        const capturedFromJson =
+          architectPayload !== null &&
+          typeof architectPayload.captured === 'object' &&
+          architectPayload.captured !== null &&
+          !Array.isArray(architectPayload.captured)
+            ? architectPayload.captured
+            : undefined;
+        await upsertChatIgnitionDraft({
+          organizationId,
+          chatId,
+          phase: 'handoff_ready',
+          captured: capturedFromJson,
+          ignitionPrompt: message,
+          handoffPayload: { kind: 'folder_agent_brief_v1', profileLine: message.split('\n')[0]?.slice(0, 200) },
+          lastArchitectPayload: architectPayload ?? undefined,
+          nextStatus: 'ready',
+        });
+        ignitionReady = true;
+      } catch {
+        /* draft persistence must not break chat */
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      reply: displayText,
+      ...(architectPayload !== null ? { architectPayload } : {}),
+      ...(ignitionReady ? { ignitionReady: true } : {}),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown server error';
     return errorResponse(500, 'INTERNAL_ERROR', message, { retryable: true });

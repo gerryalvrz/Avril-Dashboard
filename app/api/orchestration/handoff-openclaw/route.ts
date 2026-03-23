@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getClientIp, hitRateLimit, rejectLargePayload, requireDashboardToken } from '@/src/lib/apiSecurity';
-import { getDefaultOrganizationId } from '@/src/lib/convexServer';
+import { getChatIgnitionDraft, getDefaultOrganizationId } from '@/src/lib/convexServer';
 import { runOpenClawSpawn } from '@/src/lib/runOpenClawSpawn';
 
-type SpawnBody = {
+type HandoffBody = {
   chatId?: string;
-  prompt?: string;
   organizationId?: string;
 };
 
@@ -15,7 +14,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
     const ip = getClientIp(req);
-    if (hitRateLimit(`orchestration:spawn:${ip}`, 20)) {
+    if (hitRateLimit(`orchestration:handoff-openclaw:${ip}`, 20)) {
       return NextResponse.json(
         { ok: false, error: { code: 'RATE_LIMITED', message: 'Rate limit exceeded' } },
         { status: 429 }
@@ -28,12 +27,67 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = (await req.json()) as SpawnBody;
+    const body = (await req.json()) as HandoffBody;
     const chatId = body.chatId?.trim();
-    const prompt = body.prompt?.trim();
-    if (!chatId || !prompt) {
+    if (!chatId) {
       return NextResponse.json(
-        { ok: false, error: { code: 'BAD_REQUEST', message: 'chatId and prompt are required' } },
+        { ok: false, error: { code: 'BAD_REQUEST', message: 'chatId is required' } },
+        { status: 400 }
+      );
+    }
+
+    const draft = await getChatIgnitionDraft({ chatId });
+
+    if (draft?.status === 'spawned' && draft.spawnSessionId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            code: 'ALREADY_SPAWNED',
+            message: 'This chat already handed off to OpenClaw. Open Agent Office or start a new chat.',
+          },
+          existingSessionId: String(draft.spawnSessionId),
+        },
+        { status: 409 }
+      );
+    }
+
+    if (!draft) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            code: 'DRAFT_NOT_READY',
+            message: 'No ignition draft for this chat. Continue the Venice interview until handoff_ready.',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    if (draft.status !== 'ready') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            code: 'DRAFT_NOT_READY',
+            message: `Ignition draft is "${draft.status}". Complete the founder flow until status is ready.`,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    const prompt = draft.ignitionPrompt?.trim();
+    if (!prompt) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            code: 'MISSING_IGNITION_PROMPT',
+            message: 'Draft is ready but ignition prompt is empty.',
+          },
+        },
         { status: 400 }
       );
     }
@@ -43,7 +97,7 @@ export async function POST(req: Request) {
       organizationId,
       chatId,
       prompt,
-      source: 'manual_prompt',
+      source: 'venice_ignition_draft',
     });
 
     if (!result.ok) {
@@ -64,6 +118,7 @@ export async function POST(req: Request) {
       spawnRequestId: result.spawnRequestId,
       vpsRef: result.vpsRef,
       containerRef: result.containerRef,
+      handoffSource: 'venice_ignition_draft',
     });
   } catch (err) {
     return NextResponse.json(

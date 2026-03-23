@@ -18,6 +18,7 @@ import type * as lib_agentAreas from "../lib/agentAreas.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as lib_founderPrompts from "../lib/founderPrompts.js";
 import type * as lib_venice from "../lib/venice.js";
+import type * as serverChatIgnition from "../serverChatIgnition.js";
 import type * as serverChats from "../serverChats.js";
 import type * as serverControlPlane from "../serverControlPlane.js";
 import type * as serverDeployments from "../serverDeployments.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   "lib/authz": typeof lib_authz;
   "lib/founderPrompts": typeof lib_founderPrompts;
   "lib/venice": typeof lib_venice;
+  serverChatIgnition: typeof serverChatIgnition;
   serverChats: typeof serverChats;
   serverControlPlane: typeof serverControlPlane;
   serverDeployments: typeof serverDeployments;

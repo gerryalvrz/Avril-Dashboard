@@ -9,6 +9,7 @@ Agreement between AgentDashboard (`/api/chat/respond`) and the OpenClaw bridge (
 | Field       | Type     | Required | Description |
 |------------|----------|----------|-------------|
 | `message`  | string   | yes      | Current user message. |
+| `systemPrompt` | string | no   | Full Avril architect system prompt (same as Venice chat). Prepended to the payload sent to OpenClaw. |
 | `chatId`   | string   | yes      | Chat id (for logging / idempotency). |
 | `model`    | string   | no       | `codex` \| `opus` (default `codex`). |
 | `source`   | string   | no       | e.g. `agentdashboard`. |

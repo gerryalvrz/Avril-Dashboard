@@ -16,6 +16,7 @@ import {
 import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
+import { FounderChatStepper } from '@/components/founder/FounderChatStepper';
 
 const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN ?? '';
 
@@ -37,6 +38,18 @@ type Msg = {
 };
 
 type ModelChoice = 'codex' | 'opus' | 'venice';
+
+type IgnitionDraftRow = {
+  _id: string;
+  organizationId: string;
+  chatId: string;
+  phase?: string;
+  status: 'collecting' | 'ready' | 'spawned';
+  captured?: Record<string, unknown>;
+  ignitionPrompt?: string;
+  spawnSessionId?: string;
+  updatedAt: string;
+};
 
 type ApiErrorPayload = {
   error?: string | { code?: string; message?: string; retryable?: boolean; details?: unknown };
@@ -85,6 +98,9 @@ export default function ChatsPage() {
   const [newChatSubArea, setNewChatSubArea] = useState<AgentSubArea | ''>('');
   const [launchPrompt, setLaunchPrompt] = useState('');
   const [launchingOffice, setLaunchingOffice] = useState(false);
+  const [ignitionDraft, setIgnitionDraft] = useState<IgnitionDraftRow | null>(null);
+  const [lastArchitectPayload, setLastArchitectPayload] = useState<Record<string, unknown> | null>(null);
+  const [existingOfficeSessionId, setExistingOfficeSessionId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const authHeaders = useMemo<Record<string, string>>(() => {
@@ -105,6 +121,28 @@ export default function ChatsPage() {
     }),
     [chats.length, newChatArea, newChatSubArea, subAreaOptions]
   );
+
+  const loadIgnitionDraft = async (chatId: string | null) => {
+    if (!chatId) {
+      setIgnitionDraft(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/chat/ignition-draft?chatId=${encodeURIComponent(chatId)}`, {
+        cache: 'no-store',
+        credentials: 'include',
+        headers: { ...authHeaders },
+      });
+      if (!res.ok) {
+        setIgnitionDraft(null);
+        return;
+      }
+      const data = await res.json();
+      setIgnitionDraft((data?.draft as IgnitionDraftRow) ?? null);
+    } catch {
+      setIgnitionDraft(null);
+    }
+  };
 
   const loadState = async (chatId?: string | null) => {
     const query = chatId ? `?chatId=${encodeURIComponent(chatId)}` : '';
@@ -128,6 +166,8 @@ export default function ChatsPage() {
       const data = await res.json();
       setChats(data.chats || []);
       setMessages(data.messages || []);
+      if (chatId) void loadIgnitionDraft(chatId);
+      else setIgnitionDraft(null);
     } catch {
       setStatusMessage('⚠️ Falló la actualización del chat. Revisa tu conexión.');
     }
@@ -175,6 +215,30 @@ export default function ChatsPage() {
     () => chats.find((c) => c._id === selectedChatId),
     [chats, selectedChatId]
   );
+
+  const mergedCaptured = useMemo(() => {
+    const a = lastArchitectPayload?.captured;
+    const b = ignitionDraft?.captured;
+    const ao = a && typeof a === 'object' && !Array.isArray(a) ? (a as Record<string, unknown>) : null;
+    const bo = b && typeof b === 'object' && !Array.isArray(b) ? (b as Record<string, unknown>) : null;
+    if (ao && bo) return { ...bo, ...ao };
+    return ao ?? bo ?? null;
+  }, [lastArchitectPayload, ignitionDraft]);
+
+  const mergedPhase = useMemo(() => {
+    const p = lastArchitectPayload?.phase ?? ignitionDraft?.phase;
+    return typeof p === 'string' ? p : null;
+  }, [lastArchitectPayload, ignitionDraft]);
+
+  const mergedQuestionIndex = useMemo(() => {
+    const r = lastArchitectPayload?.questionIndex;
+    return typeof r === 'number' && r >= 0 && r <= 3 ? r : null;
+  }, [lastArchitectPayload]);
+
+  useEffect(() => {
+    setLastArchitectPayload(null);
+    setExistingOfficeSessionId(null);
+  }, [selectedChatId]);
 
   async function handleCreateChat() {
     const res = await fetch('/api/chat/create', {
@@ -282,8 +346,15 @@ export default function ChatsPage() {
 
       const data = await res.json();
       const reply = data?.reply || '';
-
-      setStatusMessage('🔄 Actualizando estado del chat...');
+      const ap = data?.architectPayload;
+      if (ap && typeof ap === 'object' && !Array.isArray(ap)) {
+        setLastArchitectPayload(ap as Record<string, unknown>);
+      }
+      setStatusMessage(
+        data?.ignitionReady
+          ? '✅ Ignition ready — use “Send to OpenClaw” below to spawn.'
+          : '🔄 Actualizando estado del chat...'
+      );
       await loadState(chatId);
 
       if (reply) {
@@ -292,7 +363,10 @@ export default function ChatsPage() {
       }
 
       await loadState(chatId);
-      setStatusMessage('');
+      await loadIgnitionDraft(chatId);
+      setStatusMessage(
+        data?.ignitionReady ? '✅ Ignition ready — use “Send to OpenClaw” below to spawn.' : ''
+      );
     } catch (err) {
       const isAbort = err instanceof Error && err.name === 'AbortError';
       setStatusMessage(
@@ -305,9 +379,9 @@ export default function ChatsPage() {
     }
   }
 
-  async function handleLaunchOffice() {
+  async function spawnOfficeWithPrompt(promptRaw: string) {
     if (!selectedChatId || launchingOffice) return;
-    const prompt = launchPrompt.trim() || 'Launch agent office for this chat venture.';
+    const prompt = promptRaw.trim() || 'Launch agent office for this chat venture.';
     setLaunchingOffice(true);
     setStatusMessage('🚀 Launching Agent Office...');
     try {
@@ -331,9 +405,64 @@ export default function ChatsPage() {
         return;
       }
       setStatusMessage('✅ Agent Office launched.');
+      void loadIgnitionDraft(selectedChatId);
       router.push(`/agents/office?sessionId=${encodeURIComponent(sessionId)}`);
     } catch (err) {
       setStatusMessage(err instanceof Error ? `❌ ${err.message}` : '❌ Failed to launch office.');
+    } finally {
+      setLaunchingOffice(false);
+    }
+  }
+
+  async function handleLaunchOffice() {
+    await spawnOfficeWithPrompt(launchPrompt);
+  }
+
+  async function handleSpawnWithSavedPrompt() {
+    const fromDb = ignitionDraft?.ignitionPrompt?.trim() ?? '';
+    await spawnOfficeWithPrompt(fromDb || launchPrompt);
+  }
+
+  async function handleHandoffToOpenClaw() {
+    if (!selectedChatId || launchingOffice) return;
+    setLaunchingOffice(true);
+    setExistingOfficeSessionId(null);
+    setStatusMessage('🚀 Sending Venice ignition to OpenClaw…');
+    try {
+      const res = await fetch('/api/orchestration/handoff-openclaw', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+        body: JSON.stringify({ chatId: selectedChatId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        const sid = data?.existingSessionId;
+        if (sid) setExistingOfficeSessionId(String(sid));
+        setStatusMessage(
+          typeof data?.error?.message === 'string'
+            ? `ℹ️ ${data.error.message}`
+            : 'ℹ️ This chat was already handed off to OpenClaw.'
+        );
+        return;
+      }
+      if (!res.ok) {
+        setStatusMessage(`❌ ${data?.error?.message || data?.error?.code || 'Handoff failed.'}`);
+        return;
+      }
+      const sessionId = data?.sessionId;
+      if (!sessionId) {
+        setStatusMessage('❌ Missing sessionId from handoff response.');
+        return;
+      }
+      setStatusMessage('✅ OpenClaw accepted — opening Agent Office.');
+      void loadIgnitionDraft(selectedChatId);
+      router.push(`/agents/office?sessionId=${encodeURIComponent(sessionId)}`);
+    } catch (err) {
+      setStatusMessage(err instanceof Error ? `❌ ${err.message}` : '❌ Handoff failed.');
     } finally {
       setLaunchingOffice(false);
     }
@@ -463,6 +592,133 @@ export default function ChatsPage() {
             </select>
           </div>
         </div>
+
+        {selectedChatId && (
+          <div className="px-4 py-2 border-b border-white/10 bg-black/20 space-y-2">
+            <FounderChatStepper
+              phase={mergedPhase}
+              questionIndex={mergedQuestionIndex}
+              captured={mergedCaptured}
+              draftStatus={ignitionDraft?.status ?? null}
+            />
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                className="text-[10px] py-1 px-2"
+                onClick={() => router.push(`/?applyChatDraft=${encodeURIComponent(selectedChatId)}`)}
+              >
+                Fill Home · Advanced form from this chat
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {selectedChatId && (
+          <div className="px-4 py-3 border-b border-white/10 bg-black/25 text-xs space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-white/90">Ignition draft (Convex)</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  ignitionDraft?.status === 'ready'
+                    ? 'bg-emerald-500/20 text-emerald-200'
+                    : ignitionDraft?.status === 'spawned'
+                      ? 'bg-blue-500/20 text-blue-200'
+                      : ignitionDraft
+                        ? 'bg-amber-500/15 text-amber-100'
+                        : 'bg-white/10 text-muted'
+                }`}
+              >
+                {ignitionDraft?.status ?? 'no row'}
+              </span>
+            </div>
+            {ignitionDraft ? (
+              <>
+                <p className="text-muted">
+                  Phase: {ignitionDraft.phase ?? '—'} · Updated {timeLabel(ignitionDraft.updatedAt)}
+                  {ignitionDraft.spawnSessionId ? ' · Linked to spawn session' : ''}
+                </p>
+                <div className="max-h-24 overflow-y-auto rounded-lg bg-black/35 border border-white/10 p-2 text-[10px] text-gray-300 font-mono whitespace-pre-wrap">
+                  {ignitionDraft.ignitionPrompt?.trim()
+                    ? ignitionDraft.ignitionPrompt.length > 600
+                      ? `${ignitionDraft.ignitionPrompt.slice(0, 600)}…`
+                      : ignitionDraft.ignitionPrompt
+                    : 'No ignition prompt yet — continue the Avril interview until handoff_ready.'}
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {ignitionDraft.status === 'ready' && (
+                    <Button
+                      type="button"
+                      className="text-xs py-1.5 px-3 font-semibold bg-emerald-600/90 hover:bg-emerald-500/90 border-emerald-400/30"
+                      disabled={launchingOffice}
+                      onClick={() => void handleHandoffToOpenClaw()}
+                    >
+                      {launchingOffice ? 'Sending…' : 'Send to OpenClaw (production)'}
+                    </Button>
+                  )}
+                  {ignitionDraft.status === 'spawned' && ignitionDraft.spawnSessionId && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="text-xs py-1.5 px-3"
+                      onClick={() =>
+                        router.push(
+                          `/agents/office?sessionId=${encodeURIComponent(ignitionDraft.spawnSessionId!)}`
+                        )
+                      }
+                    >
+                      Open Agent Office
+                    </Button>
+                  )}
+                  {existingOfficeSessionId && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="text-xs py-1 px-2"
+                      onClick={() =>
+                        router.push(
+                          `/agents/office?sessionId=${encodeURIComponent(existingOfficeSessionId)}`
+                        )
+                      }
+                    >
+                      Open existing office
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="text-xs py-1 px-2"
+                    disabled={!ignitionDraft.ignitionPrompt?.trim()}
+                    onClick={() => setLaunchPrompt(ignitionDraft.ignitionPrompt ?? '')}
+                  >
+                    Load DB prompt into spawn field
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="text-xs py-1 px-2"
+                    disabled={launchingOffice || (!ignitionDraft.ignitionPrompt?.trim() && !launchPrompt.trim())}
+                    onClick={() => void handleSpawnWithSavedPrompt()}
+                  >
+                    Spawn with saved prompt
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="text-xs py-1 px-2"
+                    onClick={() => void loadIgnitionDraft(selectedChatId)}
+                  >
+                    Refresh draft
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted">
+                No draft document yet. After Avril replies with structured data, this panel fills from Convex.
+              </p>
+            )}
+          </div>
+        )}
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((m) => (

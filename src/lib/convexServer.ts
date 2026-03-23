@@ -388,3 +388,47 @@ export async function deployOpenClawInstance(args: { ideaId?: string }) {
     ideaId: args.ideaId,
   });
 }
+
+export async function upsertChatIgnitionDraft(args: {
+  organizationId: string;
+  chatId: string;
+  phase?: string;
+  captured?: unknown;
+  ignitionPrompt?: string;
+  handoffPayload?: unknown;
+  lastArchitectPayload?: unknown;
+  nextStatus: 'collecting' | 'ready';
+}) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).mutation('serverChatIgnition:upsertChatIgnitionDraftServer', {
+    organizationId: args.organizationId,
+    chatId: args.chatId,
+    serverSecret,
+    phase: args.phase,
+    captured: args.captured,
+    ignitionPrompt: args.ignitionPrompt,
+    handoffPayload: args.handoffPayload,
+    lastArchitectPayload: args.lastArchitectPayload,
+    nextStatus: args.nextStatus,
+  });
+}
+
+export async function getChatIgnitionDraft(args: { chatId: string }) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).query('serverChatIgnition:getChatIgnitionDraftServer', {
+    chatId: args.chatId,
+    serverSecret,
+  });
+}
+
+export async function markChatIgnitionSpawned(args: { chatId: string; sessionId: string }) {
+  const client = getClient();
+  const serverSecret = requireServerSecret();
+  return await (client as any).mutation('serverChatIgnition:markChatIgnitionSpawnedServer', {
+    chatId: args.chatId,
+    sessionId: args.sessionId,
+    serverSecret,
+  });
+}

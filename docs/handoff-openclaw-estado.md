@@ -45,7 +45,7 @@ Se implementó el alcance acordado sin provisioning Docker/VPS en este repo:
   - registra estado/eventos en Convex
 - El route **no** usa `docker exec`.
 - Se agregó guard estricto para bridge URL permitida:
-  - `https://openclaw.agents.motusdao.org/respond`
+  - `https://openclaw.app.avril.life/respond`
 
 ### 3) Office UI + debug
 

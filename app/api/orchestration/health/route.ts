@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireDashboardToken } from '@/src/lib/apiSecurity';
+import { resolveOpenClawBridgeUrl } from '@/src/lib/openclawBridgeEnv';
 
 type Reachability = 'reachable' | 'unreachable';
 
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
   }
 
-  const bridgeUrl = process.env.OPENCLAW_BRIDGE_URL;
+  const bridgeUrl = resolveOpenClawBridgeUrl();
   const bridgeToken = process.env.OPENCLAW_BRIDGE_TOKEN;
   const gatewayUrl = process.env.OPENCLAW_GATEWAY_URL;
   const gatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;

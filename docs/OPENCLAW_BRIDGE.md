@@ -32,6 +32,35 @@ Copy the generated `https://...trycloudflare.com` URL.
 
 Then redeploy.
 
+## Local Next.js dev (`npm run dev`)
+
+If `OPENCLAW_BRIDGE_URL` points at a public host (e.g. `https://openclaw.app.avril.life/respond`), your laptop may get **502** or connection errors from `/api/chat/respond` when that host is unreachable from your machine.
+
+Use a **dev-only** override (ignored in production / `next start`):
+
+1. In `.env.local`:
+
+   ```bash
+   OPENCLAW_BRIDGE_URL_DEV=http://127.0.0.1:8787/respond
+   OPENCLAW_BRIDGE_TOKEN=<same-as-bridge-process>
+   ```
+
+2. In another terminal, run the bridge:
+
+   ```bash
+   export OPENCLAW_BRIDGE_TOKEN='<same-as-above>'
+   export OPENCLAW_BRIDGE_PORT=8787
+   node bridge/openclaw-bridge.mjs
+   ```
+
+3. Quick check: `curl -s http://127.0.0.1:8787/health` → `{"ok":true}`
+
+Spawn’s allow-list automatically matches `OPENCLAW_BRIDGE_URL_DEV` when `NODE_ENV=development`.
+
+**Shortcut:** `npm run openclaw:bridge` (after `export OPENCLAW_BRIDGE_TOKEN=...` — same value as in `.env.local`).
+
+If you use **`127.0.0.1`** in `OPENCLAW_BRIDGE_URL_DEV`, the bridge must run on the **same machine** as `next dev`. If OpenClaw runs only on a **VPS**, remove `OPENCLAW_BRIDGE_URL_DEV` or point it at `https://openclaw.app.avril.life/respond` and fix the server — see [VPS_OPENCLAW_CHECKS.md](./VPS_OPENCLAW_CHECKS.md).
+
 ## 4) Keep process alive
 
 Use `tmux` or `systemd`/`pm2` so bridge + tunnel survive disconnects.

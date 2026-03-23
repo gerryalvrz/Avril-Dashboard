@@ -5,9 +5,13 @@ import { useSearchParams } from 'next/navigation';
 import OfficeWorld2D from '@/src/components/office/OfficeWorld2D';
 import OfficeLegend from '@/src/components/office/OfficeLegend';
 import SessionTimeline from '@/src/components/office/SessionTimeline';
+import OfficeAgentChat from '@/src/components/office/OfficeAgentChat';
+
+const DASHBOARD_TOKEN = process.env.NEXT_PUBLIC_DASHBOARD_APP_TOKEN ?? '';
 
 type Session = {
   _id: string;
+  chatId?: string;
   status: 'queued' | 'spawning' | 'active' | 'failed' | 'completed';
   spawnRequestId?: string;
   vpsRef?: string;
@@ -43,8 +47,17 @@ export default function AgentOfficePage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [selectedAgentKey, setSelectedAgentKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [showChat, setShowChat] = useState(false);
 
   const sessionId = searchParams.get('sessionId')?.trim() || '';
+  const chatIdParam = searchParams.get('chatId')?.trim() || '';
+  const resolvedChatId = session?.chatId || chatIdParam;
+
+  const authHeaders = useMemo<Record<string, string>>(() => {
+    const headers: Record<string, string> = {};
+    if (DASHBOARD_TOKEN) headers['x-dashboard-token'] = DASHBOARD_TOKEN;
+    return headers;
+  }, []);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -55,6 +68,7 @@ export default function AgentOfficePage() {
         const res = await fetch(`/api/orchestration/session?sessionId=${encodeURIComponent(sessionId)}`, {
           cache: 'no-store',
           credentials: 'include',
+          headers: authHeaders,
         });
         const data = await res.json();
         if (!active) return;
@@ -102,6 +116,7 @@ export default function AgentOfficePage() {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
       },
       body: JSON.stringify({ sessionId, agentKey: selectedAgent.agentKey, command }),
     });
@@ -151,12 +166,27 @@ export default function AgentOfficePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-4">
         <OfficeWorld2D agents={agents} selectedAgentKey={selectedAgentKey} onSelectAgent={setSelectedAgentKey} />
 
         <div className="space-y-4">
           <div className="glass rounded-2xl p-4">
-            <h4 className="font-heading text-sm mb-2">Agent Controls</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-heading text-sm">Agent Controls</h4>
+              {resolvedChatId && (
+                <button
+                  type="button"
+                  onClick={() => setShowChat((v) => !v)}
+                  className={`text-xs px-3 py-1 rounded-lg transition-colors ${
+                    showChat
+                      ? 'bg-accent/20 text-accent ring-1 ring-accent/30'
+                      : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {showChat ? 'Hide Chat' : 'Chat'}
+                </button>
+              )}
+            </div>
             {!selectedAgent && <p className="text-xs text-muted">Select an agent in the map to inspect and control it.</p>}
             {selectedAgent && (
               <div className="space-y-2">
@@ -174,6 +204,20 @@ export default function AgentOfficePage() {
               </div>
             )}
           </div>
+
+          {showChat && resolvedChatId && (
+            <OfficeAgentChat
+              agents={agents.map((a) => ({
+                agentKey: a.agentKey,
+                name: a.name,
+                role: a.role,
+                status: a.status,
+              }))}
+              chatId={resolvedChatId}
+              selectedAgentKey={selectedAgentKey}
+              onSelectAgent={setSelectedAgentKey}
+            />
+          )}
 
           <SessionTimeline events={events} />
         </div>

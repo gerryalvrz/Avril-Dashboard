@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint --dir app --dir src --dir convex --dir components",
     "typecheck": "tsc --noEmit",
-    "test:happy-path": "node ./script/happy-path-check.mjs"
+    "test:happy-path": "node ./script/happy-path-check.mjs",
+    "diagnose:openclaw": "node ./script/openclaw-diagnostic.mjs",
+    "openclaw:bridge": "node bridge/openclaw-bridge.mjs"
   },
   "dependencies": {
     "@human.tech/passport-embed": "^0.3.4",

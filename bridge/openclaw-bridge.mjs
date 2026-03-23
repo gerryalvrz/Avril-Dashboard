@@ -83,6 +83,7 @@ const server = http.createServer(async (req, res) => {
     const agentId = body?.agentId;
     const area = body?.area;
     const subArea = body?.subArea;
+    const systemPrompt = typeof body?.systemPrompt === 'string' ? body.systemPrompt.trim() : '';
     const summary = typeof body?.summary === 'string' ? body.summary.trim() : '';
     const messages = Array.isArray(body?.messages) ? body.messages : [];
     const maxContextChars = typeof body?.maxContextChars === 'number' && body.maxContextChars > 0
@@ -111,6 +112,9 @@ const server = http.createServer(async (req, res) => {
     if (agentId != null || area != null || subArea != null) {
       const meta = [agentId && `agentId=${agentId}`, area && `area=${area}`, subArea && `subArea=${subArea}`].filter(Boolean).join(', ');
       payloadMessage = `[Agent context: ${meta}]\n\n${payloadMessage}`;
+    }
+    if (systemPrompt.length > 0) {
+      payloadMessage = `(System — Avril architect persona)\n${systemPrompt}\n\n---\n\n${payloadMessage}`;
     }
 
     const args = [

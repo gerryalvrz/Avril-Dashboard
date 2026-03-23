@@ -221,6 +221,20 @@ export default defineSchema({
     summaryUpdatedAt: v.optional(v.string()),
   }).index('by_org', ['organizationId']).index('by_updatedAt', ['updatedAt']).index('by_agent', ['agentId']),
   messages: defineTable({ chatId: v.id('chats'), authorType: v.union(v.literal('human'), v.literal('agent')), authorId: v.string(), content: v.string(), createdAt: v.string() }).index('by_chat', ['chatId']),
+  /** Latest Avril chat → ignition export for this thread (full demo path). */
+  chatIgnitionDrafts: defineTable({
+    organizationId: v.id('organizations'),
+    chatId: v.id('chats'),
+    phase: v.optional(v.string()),
+    status: v.union(v.literal('collecting'), v.literal('ready'), v.literal('spawned')),
+    captured: v.optional(v.any()),
+    ignitionPrompt: v.optional(v.string()),
+    handoffPayload: v.optional(v.any()),
+    lastArchitectPayload: v.optional(v.any()),
+    spawnSessionId: v.optional(v.id('orchestrationSessions')),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  }).index('by_chat', ['chatId']),
   wallets: defineTable({ organizationId: v.id('organizations'), ownerUserId: v.id('users'), provider: v.string(), address: v.string(), createdAt: v.string() }).index('by_org', ['organizationId']),
   walletPermissions: defineTable({ walletId: v.id('wallets'), memberUserId: v.id('users'), permission: v.union(v.literal('view'), v.literal('propose'), v.literal('execute'), v.literal('approve')), createdAt: v.string() }).index('by_wallet_user', ['walletId', 'memberUserId']),
   approvals: defineTable({

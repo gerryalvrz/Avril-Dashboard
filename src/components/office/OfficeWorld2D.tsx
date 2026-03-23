@@ -109,6 +109,15 @@ const ROLE_AVATAR_CLASS: Record<string, string> = {
   Treasury: 'from-amber-500 to-orange-500',
   Identity: 'from-emerald-500 to-teal-500',
   Infrastructure: 'from-rose-500 to-red-500',
+  'Strategy & Planning': 'from-violet-500 to-indigo-500',
+  'Operations & Execution': 'from-amber-500 to-orange-500',
+  'Growth & Outreach': 'from-emerald-500 to-cyan-500',
+  'Market research & data gathering': 'from-blue-400 to-indigo-400',
+  'Metrics, KPI tracking & reporting': 'from-purple-400 to-violet-400',
+  'Task execution & implementation': 'from-yellow-500 to-amber-400',
+  'Quality checks & compliance': 'from-orange-400 to-rose-400',
+  'Content creation & comms': 'from-teal-400 to-emerald-400',
+  'Distribution & partnerships': 'from-cyan-400 to-blue-400',
 };
 
 function withLayout(agents: AgentNode[]): WorldAgent[] {

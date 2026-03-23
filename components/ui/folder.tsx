@@ -28,9 +28,11 @@ type FolderProps = {
   size?: number;
   items?: Array<ReactNode>;
   className?: string;
+  /** When folder is open, clicking a paper fires this (index 0..2). Clicks do not toggle the folder. */
+  onPaperClick?: (index: number) => void;
 };
 
-export default function Folder({ color = "#5227FF", size = 1, items = [], className = "" }: FolderProps) {
+export default function Folder({ color = "#5227FF", size = 1, items = [], className = "", onPaperClick }: FolderProps) {
   const maxItems = 3;
   const papers = items.slice(0, maxItems);
   while (papers.length < maxItems) papers.push(null);
@@ -93,13 +95,29 @@ export default function Folder({ color = "#5227FF", size = 1, items = [], classN
             <div
               key={i}
               className={styles.paper}
+              role={onPaperClick && open ? "button" : undefined}
+              tabIndex={onPaperClick && open ? 0 : undefined}
               onMouseMove={(e) => handlePaperMouseMove(e, i)}
               onMouseLeave={() => handlePaperMouseLeave(i)}
+              onClick={(e) => {
+                if (!open || !onPaperClick) return;
+                e.stopPropagation();
+                onPaperClick(i);
+              }}
+              onKeyDown={(e) => {
+                if (!open || !onPaperClick) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onPaperClick(i);
+                }
+              }}
               style={
                 open
                   ? ({
                       "--magnet-x": `${paperOffsets[i]?.x || 0}px`,
                       "--magnet-y": `${paperOffsets[i]?.y || 0}px`,
+                      cursor: onPaperClick ? "pointer" : undefined,
                     } as CSSProperties)
                   : undefined
               }

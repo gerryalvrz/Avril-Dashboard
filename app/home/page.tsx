@@ -1,11 +1,13 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Card from '@/src/components/ui/Card';
 import SectionTitle from '@/src/components/ui/SectionTitle';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
 import { FounderIntakeSchema } from '@/src/modules/founder/schemas';
+import { mergeCapturedIntoIntakeForm } from '@/src/modules/founder/mergeCapturedIntoIntakeForm';
 import { useWaaP } from '@/src/components/WaaPProvider';
 import { AnimatedAIChat } from '@/components/ui/animated-ai-chat';
 
@@ -37,8 +39,11 @@ const EMPTY_STATE: ControlState = {
   recentAgentEvents: [],
 };
 
-export default function HomePage() {
+function HomePageContent() {
   const { address } = useWaaP();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const applyChatDraftOnce = useRef<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [state, setState] = useState<ControlState>(EMPTY_STATE);
   const [loading, setLoading] = useState(true);
@@ -119,6 +124,45 @@ export default function HomePage() {
     const id = setInterval(() => void loadState(), 5000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const chatId = searchParams.get('applyChatDraft')?.trim();
+    if (!chatId) {
+      applyChatDraftOnce.current = null;
+      return;
+    }
+    if (applyChatDraftOnce.current === chatId) return;
+    applyChatDraftOnce.current = chatId;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/chat/ignition-draft?chatId=${encodeURIComponent(chatId)}`, {
+          cache: 'no-store',
+          credentials: 'include',
+          headers: { ...authHeaders },
+        });
+        const data = await res.json().catch(() => ({}));
+        const cap = data?.draft?.captured;
+        if (cap && typeof cap === 'object' && !Array.isArray(cap)) {
+          setForm((prev) => mergeCapturedIntoIntakeForm(prev, cap as Record<string, unknown>));
+          setShowAdvanced(true);
+          setStatus({
+            kind: 'success',
+            text: 'Advanced form filled from your Avril chat (Convex draft). Review and save intake when ready.',
+          });
+        } else {
+          setShowAdvanced(true);
+          setStatus({
+            kind: 'info',
+            text: 'That chat has no captured fields yet. Keep talking to Avril on Chats, then try again.',
+          });
+        }
+      } catch {
+        setStatus({ kind: 'error', text: 'Could not load chat draft to fill the form.' });
+      }
+      router.replace('/', { scroll: false });
+    })();
+  }, [searchParams, authHeaders, router]);
 
   const progress = useMemo(() => {
     const steps = [
@@ -484,5 +528,13 @@ export default function HomePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="font-sans p-8 text-muted text-sm">Loading…</div>}>
+      <HomePageContent />
+    </Suspense>
   );
 }
